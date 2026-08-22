@@ -19,8 +19,8 @@ final class CameraCaptureService: NSObject, AVCaptureVideoDataOutputSampleBuffer
     var onFrame: ((CVPixelBuffer) -> Void)?
 
     private let output = AVCaptureVideoDataOutput()
-    private let frameQueue = DispatchQueue(label: "com.liveblur.cameraFrames", qos: .userInitiated)
-    private let sessionQueue = DispatchQueue(label: "com.liveblur.cameraSession", qos: .userInitiated)
+    private let frameQueue = DispatchQueue(label: "com.redact.cameraFrames", qos: .userInitiated)
+    private let sessionQueue = DispatchQueue(label: "com.redact.cameraSession", qos: .userInitiated)
 
     func requestAccessAndStart() async throws {
         switch AVCaptureDevice.authorizationStatus(for: .video) {

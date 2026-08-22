@@ -67,7 +67,7 @@ struct UltraWordmark: View {
                 .fill(palette.accentGradient)
                 .frame(width: 28, height: 28)
                 .overlay(Image(systemName: "aperture").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white))
-            Text("LIVEBLUR")
+            Text("REDACT")
                 .font(.system(size: 17, weight: .heavy, design: .rounded))
                 .tracking(1.2)
                 .foregroundStyle(palette.textPrimary)

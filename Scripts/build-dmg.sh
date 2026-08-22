@@ -1,14 +1,14 @@
 #!/bin/bash
-# Builds a release LiveBlur.app and wraps it in a distributable, ad-hoc signed .dmg installer
-# with a drag-to-Applications layout. Output: LiveBlur.dmg in the repo root.
+# Builds a release Redact.app and wraps it in a distributable, ad-hoc signed .dmg installer
+# with a drag-to-Applications layout. Output: Redact.dmg in the repo root.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ./Scripts/build-app.sh release
 
-APP="LiveBlur.app"
-VOLNAME="LiveBlur"
-DMG="LiveBlur.dmg"
+APP="Redact.app"
+VOLNAME="Redact"
+DMG="Redact.dmg"
 STAGING="$(mktemp -d)"
 
 trap 'rm -rf "$STAGING"' EXIT

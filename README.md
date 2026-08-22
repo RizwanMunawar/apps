@@ -1,17 +1,17 @@
-# LiveBlur
+# Redact
 
 A native macOS SwiftUI app that blurs chosen object classes live on your webcam feed, entirely on-device — no network calls, no API keys, no per-frame cost.
 
 ## Install
 
-Download `LiveBlur.dmg` from the [latest release](../../releases/latest), open it, and drag **LiveBlur** into **Applications**.
+Download `Redact.dmg` from the [latest release](../../releases/latest), open it, and drag **Redact** into **Applications**.
 
-The app is ad-hoc signed (not notarized), so on first launch Gatekeeper will block it. Right-click `LiveBlur.app` → **Open** → **Open** to approve it once.
+The app is ad-hoc signed (not notarized), so on first launch Gatekeeper will block it. Right-click `Redact.app` → **Open** → **Open** to approve it once.
 
 ## How it works
 
 - **Capture** — `AVCaptureSession` streams webcam frames in real time.
-- **Detect** — each frame is letterboxed to 640x640 and run through a bundled **YOLO26n-seg** CoreML model (`Sources/LiveBlur/Resources/yolo26n-seg.mlpackage`), decoding its native end-to-end `[x1, y1, x2, y2, confidence, class, ...32 mask coefficients]` output plus its `[32, 160, 160]` prototype-mask output.
+- **Detect** — each frame is letterboxed to 640x640 and run through a bundled **YOLO26n-seg** CoreML model (`Sources/Redact/Resources/yolo26n-seg.mlpackage`), decoding its native end-to-end `[x1, y1, x2, y2, confidence, class, ...32 mask coefficients]` output plus its `[32, 160, 160]` prototype-mask output.
 - **Blur** — detections matching your selected classes get a CoreImage pixelate/Gaussian patch composited over them. Two methods:
   - **Box** — fills the full bounding box (fast).
   - **Segmentation** — additionally clipped to the object's per-pixel mask via `CIBlendWithMask`, so only its actual silhouette blurs, not the background inside its box (slower, precise).
@@ -24,17 +24,17 @@ Everything runs locally on the Neural Engine/GPU via CoreML.
 Camera access requires a real, LaunchServices-registered `.app` bundle — a bare `swift run` process is often silently denied. Build and launch the packaged app instead:
 
 ```sh
-Scripts/build-app.sh      # debug build -> LiveBlur.app
-open LiveBlur.app
+Scripts/build-app.sh      # debug build -> Redact.app
+open Redact.app
 ```
 
 To build the distributable installer:
 
 ```sh
-Scripts/build-dmg.sh      # release build -> LiveBlur.app -> LiveBlur.dmg
+Scripts/build-dmg.sh      # release build -> Redact.app -> Redact.dmg
 ```
 
-Re-run after any code change to refresh the bundle. The first launch compiles the bundled `.mlpackage` into a cached `.mlmodelc` under `~/Library/Application Support/LiveBlur/`; subsequent launches reuse it.
+Re-run after any code change to refresh the bundle. The first launch compiles the bundled `.mlpackage` into a cached `.mlmodelc` under `~/Library/Application Support/Redact/`; subsequent launches reuse it.
 
 Grant camera access when macOS prompts for it. From the sidebar you can select which of the 80 COCO classes get blurred (or Select all / Clear), the blur style (pixelate / Gaussian), the blur method (box / segmentation), the blur strength, and light/dark theme.
 

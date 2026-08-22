@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct LiveBlurApp: App {
+struct RedactApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()

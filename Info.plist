@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.liveblur.app</string>
+    <string>com.rizwanai.redact</string>
     <key>CFBundleName</key>
-    <string>LiveBlur</string>
+    <string>Redact</string>
     <key>CFBundleExecutable</key>
-    <string>LiveBlur</string>
+    <string>Redact</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleShortVersionString</key>
@@ -15,7 +15,7 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>NSCameraUsageDescription</key>
-    <string>LiveBlur uses your camera to detect and blur selected objects in real time. Video is processed entirely on this Mac and never leaves it.</string>
+    <string>Redact uses your camera to detect and blur selected objects in real time. Video is processed entirely on this Mac and never leaves it.</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
 </dict>

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Packages LiveBlur as a real, launchable .app bundle. This is required (not optional) for macOS
+# Packages Redact as a real, launchable .app bundle. This is required (not optional) for macOS
 # to grant Camera access: TCC will not reliably prompt for, or even list, a bare `swift run` process.
 #
 # Usage: Scripts/build-app.sh [debug|release]   (defaults to debug)
@@ -10,16 +10,16 @@ CONFIG="${1:-debug}"
 swift build -c "$CONFIG"
 
 BIN_PATH="$(swift build -c "$CONFIG" --show-bin-path)"
-APP="LiveBlur.app"
+APP="Redact.app"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN_PATH/LiveBlur" "$APP/Contents/MacOS/LiveBlur"
+cp "$BIN_PATH/Redact" "$APP/Contents/MacOS/Redact"
 cp Info.plist "$APP/Contents/Info.plist"
 cp AppIcon/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-if [ -d "$BIN_PATH/LiveBlur_LiveBlur.bundle" ]; then
-    cp -R "$BIN_PATH/LiveBlur_LiveBlur.bundle" "$APP/Contents/Resources/LiveBlur_LiveBlur.bundle"
+if [ -d "$BIN_PATH/Redact_Redact.bundle" ]; then
+    cp -R "$BIN_PATH/Redact_Redact.bundle" "$APP/Contents/Resources/Redact_Redact.bundle"
 fi
 
 codesign --force --deep --sign - "$APP"
