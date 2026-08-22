@@ -42,7 +42,7 @@ final class YOLODetector {
         }
 
         let cacheDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Redact", isDirectory: true)
+            .appendingPathComponent("apps-releases/Redact", isDirectory: true)
         try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
         let cachedModelURL = cacheDir.appendingPathComponent("yolo26n-seg.mlmodelc")
 

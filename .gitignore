@@ -4,12 +4,14 @@
 Package.resolved
 
 # Packaged app / installer output (built via Scripts/build-app.sh and Scripts/build-dmg.sh)
+apps-releases.app/
+apps-releases.dmg
 Redact.app/
 Redact.dmg
 
 # macOS
 .DS_Store
 
-# Unrelated local project sharing this directory — not part of the Redact repo
+# Unrelated local project sharing this directory — not part of this repo
 food-label-translator/
 .npm_cache/

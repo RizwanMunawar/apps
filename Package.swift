@@ -2,14 +2,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "Redact",
+    name: "AppsReleases",
     platforms: [.macOS(.v14)],
-    products: [.executable(name: "Redact", targets: ["Redact"])],
+    // Product name is the literal binary/bundle name ("apps-releases"); the target name has to
+    // be a valid Swift module identifier, so it can't carry the hyphen itself.
+    products: [.executable(name: "apps-releases", targets: ["AppShell"])],
     targets: [
         .executableTarget(
-            name: "Redact",
-            path: "Sources/Redact",
-            resources: [.copy("Resources/yolo26n-seg.mlpackage")],
+            name: "AppShell",
+            path: "Sources/AppShell",
+            resources: [.copy("Apps/Redact/Resources/yolo26n-seg.mlpackage")],
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", "Info.plist"])
             ]

@@ -1,10 +1,10 @@
 import SwiftUI
 
 @main
-struct RedactApp: App {
+struct ShellApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView()
+            ShellRootView()
                 .preferredColorScheme(.dark)
         }
         .windowStyle(.hiddenTitleBar)

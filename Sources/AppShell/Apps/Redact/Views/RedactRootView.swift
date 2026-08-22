@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct RootView: View {
+struct RedactRootView: View {
     @StateObject private var viewModel = BlurSessionViewModel()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var zoomManager = ZoomManager()
@@ -26,20 +26,22 @@ struct RootView: View {
     private var sidebar: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    RedactWordmark(palette: palette)
-                    Spacer()
-                    ZoomControl(zoomManager: zoomManager, palette: palette)
-                    ThemeToggle(themeManager: themeManager)
-                    StatusPill(palette: palette, isRunning: viewModel.isRunning)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        RedactWordmark(palette: palette)
+                        Spacer(minLength: 8)
+                        ThemeToggle(themeManager: themeManager)
+                    }
+                    HStack {
+                        ZoomControl(zoomManager: zoomManager, palette: palette)
+                        Spacer()
+                        StatusPill(palette: palette, isRunning: viewModel.isRunning)
+                    }
                 }
                 .padding(.top, 2)
 
                 controlsCard
                 classPickerCard
-                if viewModel.sessionBlurTotal > 0 {
-                    sessionInsightsCard
-                }
 
                 if let errorMessage = viewModel.errorMessage {
                     SidebarErrorBanner(message: errorMessage, palette: palette)
@@ -49,12 +51,6 @@ struct RootView: View {
             }
             .padding(22)
         }
-    }
-
-    /// Surfaces what actually happened this session — not just a live count, but which classes
-    /// got blurred most and how fast inference ran at its best — instead of a bare control panel.
-    private var sessionInsightsCard: some View {
-        SessionInsightsCard(viewModel: viewModel, palette: palette)
     }
 
     private var aboutFooter: some View {
@@ -168,45 +164,6 @@ private struct ControlsCard: View {
                 }
                 Slider(value: $viewModel.blurStrength, in: 4...60)
                     .tint(palette.accent)
-            }
-        }
-        .padding(16)
-        .redactCard(palette)
-    }
-}
-
-private struct SessionInsightsCard: View {
-    @ObservedObject var viewModel: BlurSessionViewModel
-    let palette: Palette
-    @Environment(\.sidebarZoom) private var zoom
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10 * zoom) {
-            Text("This session").sectionLabel(palette, zoom: zoom)
-
-            HStack(spacing: 12) {
-                StatTile(value: "\(viewModel.sessionBlurTotal)", label: "Total blurred", palette: palette)
-                StatTile(value: "\(Int(viewModel.peakFPS))", label: "Peak FPS", palette: palette)
-            }
-
-            if !viewModel.topBlurredClasses.isEmpty {
-                VStack(alignment: .leading, spacing: 6 * zoom) {
-                    ForEach(viewModel.topBlurredClasses, id: \.0.id) { item, count in
-                        HStack(spacing: 8) {
-                            Image(systemName: item.glyph)
-                                .font(.system(size: 10.5 * zoom))
-                                .foregroundStyle(palette.accent)
-                                .frame(width: 14 * zoom)
-                            Text(item.displayName)
-                                .zoomedFont(12, weight: .medium, zoom: zoom)
-                                .foregroundStyle(palette.textPrimary.opacity(0.8))
-                            Spacer()
-                            Text("\(count)")
-                                .zoomedFont(11.5, weight: .semibold, design: .rounded, zoom: zoom)
-                                .foregroundStyle(palette.textSecondary)
-                        }
-                    }
-                }
             }
         }
         .padding(16)

@@ -15,7 +15,9 @@ enum CameraError: LocalizedError {
 /// Captures live frames from the default video device and hands each one off via `onFrame`.
 /// Frames are delivered on a dedicated background queue, never the main thread.
 final class CameraCaptureService: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
-    let session = AVCaptureSession()
+    // Lazy so simply constructing this service (e.g. as a view model's stored property, before
+    // the user has clicked "Start camera") never allocates a capture session.
+    lazy var session = AVCaptureSession()
     var onFrame: ((CVPixelBuffer) -> Void)?
 
     private let output = AVCaptureVideoDataOutput()

@@ -95,6 +95,8 @@ struct RedactWordmark: View {
             Text("Redact")
                 .font(.system(size: 17, weight: .bold, design: .rounded))
                 .foregroundStyle(palette.textPrimary)
+                .lineLimit(1)
+                .fixedSize()
         }
     }
 }

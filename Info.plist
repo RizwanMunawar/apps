@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.rizwanai.redact</string>
+    <string>com.rizwanai.apps-releases</string>
     <key>CFBundleName</key>
-    <string>Redact</string>
+    <string>apps-releases</string>
     <key>CFBundleExecutable</key>
-    <string>Redact</string>
+    <string>apps-releases</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleShortVersionString</key>

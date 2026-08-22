@@ -1,14 +1,14 @@
 #!/bin/bash
-# Builds a release Redact.app and wraps it in a distributable, ad-hoc signed .dmg installer
-# with a drag-to-Applications layout. Output: Redact.dmg in the repo root.
+# Builds a release apps-releases.app and wraps it in a distributable, ad-hoc signed .dmg
+# installer with a drag-to-Applications layout. Output: apps-releases.dmg in the repo root.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ./Scripts/build-app.sh release
 
-APP="Redact.app"
-VOLNAME="Redact"
-DMG="Redact.dmg"
+APP="apps-releases.app"
+VOLNAME="apps-releases"
+DMG="apps-releases.dmg"
 STAGING="$(mktemp -d)"
 
 trap 'rm -rf "$STAGING"' EXIT
