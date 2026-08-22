@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Persisted sidebar text/element scale — a manual zoom independent of the system's Dynamic Type
@@ -18,6 +19,10 @@ final class ZoomManager: ObservableObject {
 
     func zoomIn() { step(by: 1) }
     func zoomOut() { step(by: -1) }
+    func reset() {
+        scale = 1.0
+        UserDefaults.standard.set(1.0, forKey: "sidebarZoom")
+    }
 
     private func step(by delta: Int) {
         guard let index = Self.steps.firstIndex(of: scale) else { scale = 1.0; return }
@@ -43,7 +48,55 @@ extension EnvironmentValues {
 /// every sidebar text/icon call site needs.
 extension View {
     func zoomedFont(_ size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default, zoom: CGFloat) -> some View {
-        font(.system(size: size * zoom, weight: weight, design: design))
+        font(AppFont.archivo(size * zoom, weight: weight))
+    }
+}
+
+/// Cmd+scroll while hovering the sidebar zooms it, and a right-click anywhere in the sidebar
+/// offers the same actions from a menu. Plain scroll (no Cmd) is left alone, since the sidebar
+/// is itself a ScrollView — hijacking every scroll for zoom would make its own content
+/// unscrollable.
+private struct ScrollToZoom: ViewModifier {
+    @ObservedObject var zoomManager: ZoomManager
+    @State private var isHovering = false
+    @State private var monitor: Any?
+    @State private var accumulatedDelta: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .onHover { isHovering = $0 }
+            .contextMenu {
+                Button("Zoom In") { zoomManager.zoomIn() }.disabled(!zoomManager.canZoomIn)
+                Button("Zoom Out") { zoomManager.zoomOut() }.disabled(!zoomManager.canZoomOut)
+                Divider()
+                Button("Reset Zoom") { zoomManager.reset() }
+            }
+            .onAppear {
+                monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+                    guard isHovering, event.modifierFlags.contains(.command) else { return event }
+                    accumulatedDelta += event.scrollingDeltaY
+                    let threshold: CGFloat = 12
+                    if accumulatedDelta > threshold {
+                        zoomManager.zoomIn()
+                        accumulatedDelta = 0
+                    } else if accumulatedDelta < -threshold {
+                        zoomManager.zoomOut()
+                        accumulatedDelta = 0
+                    }
+                    return nil // consumed: Cmd+scroll zooms instead of scrolling content
+                }
+            }
+            .onDisappear {
+                if let monitor { NSEvent.removeMonitor(monitor) }
+                monitor = nil
+            }
+    }
+}
+
+extension View {
+    /// Adds Cmd+scroll-to-zoom (while hovering) and a right-click zoom menu, backed by `manager`.
+    func scrollToZoom(_ manager: ZoomManager) -> some View {
+        modifier(ScrollToZoom(zoomManager: manager))
     }
 }
 
@@ -57,13 +110,13 @@ struct ZoomControl: View {
                 zoomManager.zoomOut()
             } label: {
                 Image(systemName: "minus")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(AppFont.archivo(10, weight: .semibold))
                     .frame(width: 22, height: 22)
             }
             .disabled(!zoomManager.canZoomOut)
 
             Text("\(Int(zoomManager.scale * 100))%")
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .font(AppFont.archivo(10, weight: .semibold))
                 .frame(minWidth: 30)
                 .foregroundStyle(palette.textSecondary)
 
@@ -71,7 +124,7 @@ struct ZoomControl: View {
                 zoomManager.zoomIn()
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(AppFont.archivo(10, weight: .semibold))
                     .frame(width: 22, height: 22)
             }
             .disabled(!zoomManager.canZoomIn)

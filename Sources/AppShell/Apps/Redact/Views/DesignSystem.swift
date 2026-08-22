@@ -24,7 +24,7 @@ struct RedactPrimaryButtonStyle: ButtonStyle {
     @Environment(\.sidebarZoom) private var zoom
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13 * zoom, weight: .semibold))
+            .font(AppFont.archivo(13 * zoom, weight: .semibold))
             .foregroundStyle(palette.onAccent)
             .padding(.vertical, 11)
             .frame(maxWidth: .infinity)
@@ -51,7 +51,7 @@ struct RedactChipStyle: ButtonStyle {
     @Environment(\.sidebarZoom) private var zoom
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12 * zoom, weight: .medium))
+            .font(AppFont.archivo(12 * zoom, weight: .medium))
             .padding(.horizontal, 12 * zoom)
             .padding(.vertical, 6.5 * zoom)
             .foregroundStyle(selected ? palette.onAccent : palette.textPrimary.opacity(0.72))
@@ -93,7 +93,7 @@ struct RedactWordmark: View {
         HStack(spacing: 9) {
             RedactMark(palette: palette)
             Text("Redact")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(AppFont.archivo(17, weight: .bold))
                 .foregroundStyle(palette.textPrimary)
                 .lineLimit(1)
                 .fixedSize()
@@ -110,7 +110,7 @@ struct StatusPill: View {
                 .fill(isRunning ? palette.accent : palette.textSecondary.opacity(0.4))
                 .frame(width: 6, height: 6)
             Text(isRunning ? "Live" : "Idle")
-                .font(.system(size: 11, weight: .medium))
+                .font(AppFont.archivo(11, weight: .medium))
                 .foregroundStyle(isRunning ? palette.accent : palette.textSecondary)
         }
         .padding(.horizontal, 9)
@@ -127,7 +127,7 @@ struct ThemeToggle: View {
             themeManager.toggle()
         } label: {
             Image(systemName: themeManager.theme == .dark ? "moon.fill" : "sun.max.fill")
-                .font(.system(size: 12, weight: .medium))
+                .font(AppFont.archivo(12, weight: .medium))
                 .foregroundStyle(themeManager.palette.textPrimary.opacity(0.85))
                 .frame(width: 28, height: 28)
                 .background(themeManager.palette.surfaceRaised, in: Circle())
@@ -139,7 +139,7 @@ struct ThemeToggle: View {
 
 extension Text {
     func sectionLabel(_ palette: Palette, zoom: CGFloat = 1.0) -> some View {
-        font(.system(size: 10.5 * zoom, weight: .semibold))
+        font(AppFont.archivo(10.5 * zoom, weight: .semibold))
             .tracking(0.8)
             .foregroundStyle(palette.textSecondary)
             .textCase(.uppercase)

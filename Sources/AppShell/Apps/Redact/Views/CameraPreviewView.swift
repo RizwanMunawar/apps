@@ -17,11 +17,11 @@ struct CameraPreviewView: View {
                     ZStack {
                         Circle().fill(palette.surfaceRaised).frame(width: 64, height: 64)
                         Image(systemName: "video.slash")
-                            .font(.system(size: 24, weight: .medium))
+                            .font(AppFont.archivo(24, weight: .medium))
                             .foregroundStyle(palette.accent)
                     }
                     Text("Start the camera to see a live preview")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .font(AppFont.archivo(13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.5))
                 }
             }

@@ -35,11 +35,11 @@ struct ClassPickerView: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11 * zoom))
+                    .font(AppFont.archivo(11 * zoom))
                     .foregroundStyle(palette.textSecondary)
                 TextField("Search 80 classes…", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12 * zoom))
+                    .font(AppFont.archivo(12 * zoom))
                     .foregroundStyle(palette.textPrimary)
             }
             .padding(.horizontal, 10)
@@ -74,16 +74,16 @@ struct ClassPickerView: View {
                         )
                     if isSelected {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 9 * zoom, weight: .black))
+                            .font(AppFont.archivo(9 * zoom, weight: .black))
                             .foregroundStyle(palette.onAccent)
                     }
                 }
                 Image(systemName: item.glyph)
-                    .font(.system(size: 11 * zoom))
+                    .font(AppFont.archivo(11 * zoom))
                     .foregroundStyle(isSelected ? palette.accent : palette.textSecondary.opacity(0.7))
                     .frame(width: 16 * zoom)
                 Text(item.displayName)
-                    .zoomedFont(12, weight: isSelected ? .semibold : .regular, design: .rounded, zoom: zoom)
+                    .zoomedFont(12, weight: isSelected ? .semibold : .regular, zoom: zoom)
                     .foregroundStyle(isSelected ? palette.textPrimary : palette.textPrimary.opacity(0.7))
                 Spacer()
             }

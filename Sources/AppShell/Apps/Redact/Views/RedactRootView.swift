@@ -13,6 +13,7 @@ struct RedactRootView: View {
                 .frame(width: 336)
                 .background(palette.surface)
                 .environment(\.sidebarZoom, zoomManager.scale)
+                .scrollToZoom(zoomManager)
             Rectangle().fill(palette.border).frame(width: 1)
             mainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -46,15 +47,9 @@ struct RedactRootView: View {
                 if let errorMessage = viewModel.errorMessage {
                     SidebarErrorBanner(message: errorMessage, palette: palette)
                 }
-
-                aboutFooter
             }
             .padding(22)
         }
-    }
-
-    private var aboutFooter: some View {
-        AboutFooter(palette: palette)
     }
 
     private var controlsCard: some View {
@@ -86,24 +81,6 @@ private struct SidebarErrorBanner: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.red.opacity(0.22), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.red.opacity(0.4)))
-    }
-}
-
-private struct AboutFooter: View {
-    let palette: Palette
-    @Environment(\.sidebarZoom) private var zoom
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Text("Redact \(AppInfo.versionString)")
-                .zoomedFont(10.5, weight: .medium, zoom: zoom)
-                .foregroundStyle(palette.textSecondary)
-            Spacer()
-            Link("Source & releases", destination: AppInfo.releaseURL)
-                .zoomedFont(10.5, weight: .semibold, zoom: zoom)
-                .foregroundStyle(palette.accent)
-        }
-        .padding(.top, 2)
     }
 }
 

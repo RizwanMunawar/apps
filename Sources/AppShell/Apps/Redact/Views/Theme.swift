@@ -13,10 +13,9 @@ struct Palette {
     let textSecondary: Color
     let colorScheme: ColorScheme
 
-    // Shared brand identity across both themes: flat graphite UI, one signal-red accent.
-    // Red is the color of a redaction/classified stamp — distinct from the generic
-    // purple-gradient "AI app" look, and legible on both light and dark surfaces.
-    let accent = Color(red: 0.863, green: 0.157, blue: 0.180)
+    // Shared brand identity across both themes: flat graphite UI, one blue accent — legible on
+    // both light and dark surfaces.
+    let accent = Color(red: 0.200, green: 0.475, blue: 0.965)
     let onAccent = Color.white
 
     static let dark = Palette(

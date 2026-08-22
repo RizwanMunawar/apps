@@ -7,8 +7,8 @@ struct SplashView: View {
     var body: some View {
         VStack(spacing: 14) {
             ShellMark(size: 64)
-            Text("apps-releases")
-                .font(.system(size: 18, weight: .semibold, design: .monospaced))
+            Text(ShellInfo.displayName)
+                .font(AppFont.archivo(18, weight: .semibold))
                 .foregroundStyle(palette.textPrimary)
         }
         .opacity(visible ? 1 : 0)

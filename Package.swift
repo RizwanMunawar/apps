@@ -11,7 +11,10 @@ let package = Package(
         .executableTarget(
             name: "AppShell",
             path: "Sources/AppShell",
-            resources: [.copy("Apps/Redact/Resources/yolo26n-seg.mlpackage")],
+            resources: [
+                .copy("Apps/Redact/Resources/yolo26n-seg.mlpackage"),
+                .copy("Resources/Fonts/Archivo-Variable.ttf")
+            ],
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", "Info.plist"])
             ]

@@ -61,7 +61,7 @@ private struct EmptySelectionView: View {
         VStack(spacing: 10) {
             ShellMark(size: 36)
             Text("Pick an app from the left")
-                .font(.system(size: 13, weight: .medium))
+                .font(AppFont.archivo(13, weight: .medium))
                 .foregroundStyle(palette.textSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
