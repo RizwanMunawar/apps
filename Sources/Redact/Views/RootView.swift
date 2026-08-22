@@ -15,7 +15,7 @@ struct RootView: View {
             mainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(palette.backgroundGradient)
+        .background(palette.background)
         .frame(minWidth: 1100, minHeight: 700)
         .preferredColorScheme(palette.colorScheme)
         .animation(.easeInOut(duration: 0.2), value: themeManager.theme)
@@ -34,6 +34,9 @@ struct RootView: View {
 
                 controlsCard
                 classPickerCard
+                if viewModel.sessionBlurTotal > 0 {
+                    sessionInsightsCard
+                }
 
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
@@ -44,9 +47,59 @@ struct RootView: View {
                         .background(Color.red.opacity(0.22), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.red.opacity(0.4)))
                 }
+
+                aboutFooter
             }
             .padding(22)
         }
+    }
+
+    /// Surfaces what actually happened this session — not just a live count, but which classes
+    /// got blurred most and how fast inference ran at its best — instead of a bare control panel.
+    private var sessionInsightsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("This session").sectionLabel(palette)
+
+            HStack(spacing: 12) {
+                statTile(value: "\(viewModel.sessionBlurTotal)", label: "Total blurred")
+                statTile(value: "\(Int(viewModel.peakFPS))", label: "Peak FPS")
+            }
+
+            if !viewModel.topBlurredClasses.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(viewModel.topBlurredClasses, id: \.0.id) { item, count in
+                        HStack(spacing: 8) {
+                            Image(systemName: item.glyph)
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(palette.accent)
+                                .frame(width: 14)
+                            Text(item.displayName)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(palette.textPrimary.opacity(0.8))
+                            Spacer()
+                            Text("\(count)")
+                                .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                                .foregroundStyle(palette.textSecondary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .redactCard(palette)
+    }
+
+    private var aboutFooter: some View {
+        HStack(spacing: 6) {
+            Text("Redact \(AppInfo.versionString)")
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(palette.textSecondary)
+            Spacer()
+            Link("Source & releases", destination: AppInfo.releaseURL)
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(palette.accent)
+        }
+        .padding(.top, 2)
     }
 
     private var controlsCard: some View {

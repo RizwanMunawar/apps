@@ -12,17 +12,17 @@ final class FrameProcessor: @unchecked Sendable {
         detector = try YOLODetector()
     }
 
-    func process(pixelBuffer: CVPixelBuffer, selectedClasses: Set<Int>, style: BlurStyle, method: BlurMethod, strength: Double) -> (image: CGImage?, detectionCount: Int) {
+    func process(pixelBuffer: CVPixelBuffer, selectedClasses: Set<Int>, style: BlurStyle, method: BlurMethod, strength: Double) -> (image: CGImage?, classIndices: [Int]) {
         let frame = CIImage(cvPixelBuffer: pixelBuffer)
         guard !selectedClasses.isEmpty else {
-            return (ciContext.createCGImage(frame, from: frame.extent), 0)
+            return (ciContext.createCGImage(frame, from: frame.extent), [])
         }
         guard let detections = try? detector.detect(in: pixelBuffer, includeMasks: method == .segmentation) else {
-            return (ciContext.createCGImage(frame, from: frame.extent), 0)
+            return (ciContext.createCGImage(frame, from: frame.extent), [])
         }
         let matched = detections.filter { selectedClasses.contains($0.classIndex) }
         let composed = BlurCompositor.apply(matched, style: style, method: method, strength: strength, to: frame)
-        return (ciContext.createCGImage(composed, from: composed.extent), matched.count)
+        return (ciContext.createCGImage(composed, from: composed.extent), matched.map(\.classIndex))
     }
 }
 

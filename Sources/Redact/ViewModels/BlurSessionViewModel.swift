@@ -8,8 +8,22 @@ final class BlurSessionViewModel: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var isStarting = false
     @Published private(set) var fps: Double = 0
+    @Published private(set) var peakFPS: Double = 0
     @Published private(set) var activeBlurCount = 0
+    @Published private(set) var sessionBlurTotal = 0
+    @Published private(set) var classCounts: [Int: Int] = [:]
     @Published var errorMessage: String?
+
+    /// The classes blurred most this session, most-frequent first — the "insightful structure"
+    /// the sidebar surfaces instead of just a live count.
+    var topBlurredClasses: [(DetectableClass, Int)] {
+        classCounts
+            .sorted { $0.value > $1.value }
+            .prefix(3)
+            .compactMap { entry in
+                DetectableClass.all.first(where: { $0.index == entry.key }).map { ($0, entry.value) }
+            }
+    }
 
     @Published var selectedClassIndices: Set<Int> = [0] { didSet { settings.selectedClasses = selectedClassIndices } }
     @Published var blurStyle: BlurStyle = .pixelate { didSet { settings.style = blurStyle } }
@@ -50,7 +64,11 @@ final class BlurSessionViewModel: ObservableObject {
                     Task { @MainActor [weak self] in
                         guard let self else { return }
                         self.previewImage = image
-                        self.activeBlurCount = result.detectionCount
+                        self.activeBlurCount = result.classIndices.count
+                        self.sessionBlurTotal += result.classIndices.count
+                        for classIndex in result.classIndices {
+                            self.classCounts[classIndex, default: 0] += 1
+                        }
                         self.recordFrame()
                     }
                 }
@@ -93,6 +111,7 @@ final class BlurSessionViewModel: ObservableObject {
         let elapsed = now - fpsWindowStart
         if elapsed >= 1.0 {
             fps = Double(frameCount) / elapsed
+            peakFPS = max(peakFPS, fps)
             frameCount = 0
             fpsWindowStart = now
         }

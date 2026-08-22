@@ -31,14 +31,14 @@ struct RedactPrimaryButtonStyle: ButtonStyle {
                 if isDestructive {
                     RoundedRectangle(cornerRadius: 9, style: .continuous).fill(palette.textSecondary.opacity(0.85))
                 } else {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous).fill(palette.accentGradient)
+                    RoundedRectangle(cornerRadius: 9, style: .continuous).fill(palette.accent)
                 }
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .strokeBorder(.white.opacity(palette.colorScheme == .dark ? 0.08 : 0))
             )
-            .shadow(color: palette.accentStart.opacity(isDestructive ? 0 : 0.35), radius: configuration.isPressed ? 4 : 10, x: 0, y: configuration.isPressed ? 2 : 5)
+            .shadow(color: palette.accent.opacity(isDestructive ? 0 : 0.3), radius: configuration.isPressed ? 4 : 10, x: 0, y: configuration.isPressed ? 2 : 5)
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
@@ -55,7 +55,7 @@ struct RedactChipStyle: ButtonStyle {
             .foregroundStyle(selected ? palette.onAccent : palette.textPrimary.opacity(0.72))
             .background {
                 if selected {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(palette.accentGradient)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(palette.accent)
                 } else {
                     RoundedRectangle(cornerRadius: 8, style: .continuous).fill(palette.surfaceRaised)
                 }
@@ -73,12 +73,12 @@ struct RedactMark: View {
     var size: CGFloat = 28
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
-            .fill(palette.accentGradient)
+            .fill(.black)
             .frame(width: size, height: size)
             .overlay {
                 VStack(spacing: size * 0.11) {
                     Capsule().fill(.white).frame(width: size * 0.5, height: size * 0.13)
-                    Capsule().fill(Color(red: 0.067, green: 0.059, blue: 0.102)).frame(width: size * 0.5, height: size * 0.13)
+                    Capsule().fill(palette.accent).frame(width: size * 0.5, height: size * 0.13)
                     Capsule().fill(.white).frame(width: size * 0.31, height: size * 0.13)
                 }
             }
@@ -103,7 +103,7 @@ struct StatusPill: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(isRunning ? AnyShapeStyle(palette.accentGradient) : AnyShapeStyle(palette.textSecondary.opacity(0.4)))
+                .fill(isRunning ? palette.accent : palette.textSecondary.opacity(0.4))
                 .frame(width: 6, height: 6)
             Text(isRunning ? "Live" : "Idle")
                 .font(.system(size: 11, weight: .medium))
