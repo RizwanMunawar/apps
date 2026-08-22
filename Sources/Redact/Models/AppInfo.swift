@@ -9,7 +9,8 @@ enum AppInfo {
     }
 
     // Source lives in the private RizwanMunawar/rizwanai monorepo (apps/redact), but its Releases
-    // aren't publicly downloadable from a private repo, so binaries ship from this small public
-    // repo instead.
-    static let releaseURL = URL(string: "https://github.com/RizwanMunawar/redact-releases/releases/tag/v1.0.0")!
+    // aren't publicly downloadable from a private repo, so binaries ship from apps-releases, a
+    // small public repo shared by every app in this family (tagged "redact-v1.0.0" etc, one
+    // prefix per app, so they can all live in the same repo's Releases).
+    static let releaseURL = URL(string: "https://github.com/RizwanMunawar/apps-releases/releases/tag/redact-v1.0.0")!
 }
