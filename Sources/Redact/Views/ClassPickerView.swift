@@ -13,22 +13,22 @@ struct ClassPickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("BLUR THESE CLASSES").sectionLabel(palette)
+                Text("Blur these classes").sectionLabel(palette)
                 Spacer()
                 Text("\(viewModel.selectedClassIndices.count) selected")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(palette.accent)
             }
 
             HStack(spacing: 8) {
                 Button("Select all") { viewModel.selectAllClasses() }
                     .buttonStyle(.plain)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(palette.accent)
                 Text("·").foregroundStyle(palette.textSecondary)
                 Button("Clear") { viewModel.clearAllClasses() }
                     .buttonStyle(.plain)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(palette.textSecondary)
             }
 
@@ -53,6 +53,7 @@ struct ClassPickerView: View {
                     }
                 }
             }
+            .frame(height: 320)
         }
     }
 

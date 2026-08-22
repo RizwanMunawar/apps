@@ -9,108 +9,120 @@ struct RootView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar
-                .frame(width: 320)
+                .frame(width: 336)
                 .background(palette.surface)
             Rectangle().fill(palette.border).frame(width: 1)
             mainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(palette.backgroundGradient)
-        .frame(minWidth: 1080, minHeight: 680)
+        .frame(minWidth: 1100, minHeight: 700)
         .preferredColorScheme(palette.colorScheme)
         .animation(.easeInOut(duration: 0.2), value: themeManager.theme)
     }
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                UltraWordmark(palette: palette)
-                Spacer()
-                ThemeToggle(themeManager: themeManager)
-                StatusPill(palette: palette, isRunning: viewModel.isRunning)
-            }
-            .padding(.top, 4)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack {
+                    RedactWordmark(palette: palette)
+                    Spacer()
+                    ThemeToggle(themeManager: themeManager)
+                    StatusPill(palette: palette, isRunning: viewModel.isRunning)
+                }
+                .padding(.top, 2)
 
-            controls
-            Rectangle().fill(palette.border).frame(height: 1)
-            ClassPickerView(viewModel: viewModel, palette: palette)
+                controlsCard
+                classPickerCard
 
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.red.opacity(0.22), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.red.opacity(0.4)))
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(.white)
+                        .padding(11)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.red.opacity(0.22), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.red.opacity(0.4)))
+                }
             }
+            .padding(22)
         }
-        .padding(20)
     }
 
-    private var controls: some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private var controlsCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
             Button {
                 if viewModel.isRunning { viewModel.stop() } else { viewModel.start() }
             } label: {
                 Text(viewModel.isRunning ? "Stop camera" : viewModel.isStarting ? "Starting…" : "Start camera")
             }
             .disabled(viewModel.isStarting)
-            .buttonStyle(UltraPrimaryButtonStyle(palette: palette, isDestructive: viewModel.isRunning))
+            .buttonStyle(RedactPrimaryButtonStyle(palette: palette, isDestructive: viewModel.isRunning))
+
+            if viewModel.isRunning {
+                HStack(spacing: 12) {
+                    statTile(value: "\(Int(viewModel.fps))", label: "FPS")
+                    statTile(value: "\(viewModel.activeBlurCount)", label: "Blurred")
+                }
+            }
+
+            Divider().overlay(palette.border)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("BLUR STYLE").sectionLabel(palette)
+                Text("Blur style").sectionLabel(palette)
                 HStack(spacing: 6) {
                     ForEach(BlurStyle.allCases) { style in
                         Button(style.rawValue) { viewModel.blurStyle = style }
-                            .buttonStyle(UltraChipStyle(palette: palette, selected: viewModel.blurStyle == style))
+                            .buttonStyle(RedactChipStyle(palette: palette, selected: viewModel.blurStyle == style))
                     }
                 }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("BLUR METHOD").sectionLabel(palette)
+                Text("Blur method").sectionLabel(palette)
                 HStack(spacing: 6) {
                     ForEach(BlurMethod.allCases) { method in
                         Button(method.label) { viewModel.blurMethod = method }
-                            .buttonStyle(UltraChipStyle(palette: palette, selected: viewModel.blurMethod == method))
+                            .buttonStyle(RedactChipStyle(palette: palette, selected: viewModel.blurMethod == method))
                     }
                 }
                 Text(viewModel.blurMethod.detail)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 10.5, weight: .regular))
                     .foregroundStyle(palette.textSecondary)
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("STRENGTH").sectionLabel(palette)
+                    Text("Strength").sectionLabel(palette)
                     Spacer()
                     Text("\(Int(viewModel.blurStrength))")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(palette.accent)
                 }
                 Slider(value: $viewModel.blurStrength, in: 4...60)
                     .tint(palette.accent)
             }
-
-            if viewModel.isRunning {
-                HStack(spacing: 16) {
-                    statTile(value: "\(Int(viewModel.fps))", label: "FPS")
-                    statTile(value: "\(viewModel.activeBlurCount)", label: "BLURRED")
-                }
-            }
         }
+        .padding(16)
+        .redactCard(palette)
+    }
+
+    private var classPickerCard: some View {
+        ClassPickerView(viewModel: viewModel, palette: palette)
+            .padding(16)
+            .redactCard(palette)
     }
 
     private func statTile(value: String, label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(.system(size: 18, weight: .heavy, design: .rounded)).foregroundStyle(palette.textPrimary)
-            Text(label).font(.system(size: 9, weight: .bold, design: .rounded)).tracking(0.6).foregroundStyle(palette.textSecondary)
+            Text(value).font(.system(size: 17, weight: .bold, design: .rounded)).foregroundStyle(palette.textPrimary)
+            Text(label).font(.system(size: 9.5, weight: .medium)).foregroundStyle(palette.textSecondary)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .ultraCard(palette)
+        .background(palette.surfaceRaised, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(palette.border))
     }
 
     private var mainContent: some View {

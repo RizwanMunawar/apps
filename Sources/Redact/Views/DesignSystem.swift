@@ -1,75 +1,97 @@
 import SwiftUI
 
-struct UltraCard: ViewModifier {
+struct RedactCard: ViewModifier {
     let palette: Palette
     var glow = false
     func body(content: Content) -> some View {
         content
-            .background(palette.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(palette.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(glow ? palette.accent.opacity(0.55) : palette.border, lineWidth: glow ? 1.5 : 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(glow ? palette.accent.opacity(0.5) : palette.border, lineWidth: glow ? 1.5 : 1)
             )
+            .shadow(color: .black.opacity(palette.colorScheme == .dark ? 0.22 : 0.06), radius: 14, x: 0, y: 6)
     }
 }
 
 extension View {
-    func ultraCard(_ palette: Palette, glow: Bool = false) -> some View { modifier(UltraCard(palette: palette, glow: glow)) }
+    func redactCard(_ palette: Palette, glow: Bool = false) -> some View { modifier(RedactCard(palette: palette, glow: glow)) }
 }
 
-struct UltraPrimaryButtonStyle: ButtonStyle {
+struct RedactPrimaryButtonStyle: ButtonStyle {
     let palette: Palette
     var isDestructive = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .bold, design: .rounded))
+            .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(palette.onAccent)
-            .padding(.vertical, 12)
+            .padding(.vertical, 11)
             .frame(maxWidth: .infinity)
             .background {
                 if isDestructive {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(palette.textSecondary)
+                    RoundedRectangle(cornerRadius: 9, style: .continuous).fill(palette.textSecondary.opacity(0.85))
                 } else {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(palette.accentGradient)
+                    RoundedRectangle(cornerRadius: 9, style: .continuous).fill(palette.accentGradient)
                 }
             }
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(.white.opacity(palette.colorScheme == .dark ? 0.08 : 0))
+            )
+            .shadow(color: palette.accentStart.opacity(isDestructive ? 0 : 0.35), radius: configuration.isPressed ? 4 : 10, x: 0, y: configuration.isPressed ? 2 : 5)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
-struct UltraChipStyle: ButtonStyle {
+struct RedactChipStyle: ButtonStyle {
     let palette: Palette
     var selected: Bool
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .font(.system(size: 12, weight: .medium))
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .foregroundStyle(selected ? palette.onAccent : palette.textPrimary.opacity(0.75))
+            .padding(.vertical, 6.5)
+            .foregroundStyle(selected ? palette.onAccent : palette.textPrimary.opacity(0.72))
             .background {
                 if selected {
-                    Capsule().fill(palette.accentGradient)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(palette.accentGradient)
                 } else {
-                    Capsule().fill(palette.surfaceRaised)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(palette.surfaceRaised)
                 }
             }
-            .overlay(Capsule().strokeBorder(selected ? .clear : palette.border))
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(selected ? .clear : palette.border))
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
-struct UltraWordmark: View {
+/// The same three-line "redacted text" mark used for the app icon, drawn natively so it stays
+/// crisp at any size and always matches the icon exactly (no bitmap asset to keep in sync).
+struct RedactMark: View {
+    let palette: Palette
+    var size: CGFloat = 28
+    var body: some View {
+        RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+            .fill(palette.accentGradient)
+            .frame(width: size, height: size)
+            .overlay {
+                VStack(spacing: size * 0.11) {
+                    Capsule().fill(.white).frame(width: size * 0.5, height: size * 0.13)
+                    Capsule().fill(Color(red: 0.067, green: 0.059, blue: 0.102)).frame(width: size * 0.5, height: size * 0.13)
+                    Capsule().fill(.white).frame(width: size * 0.31, height: size * 0.13)
+                }
+            }
+    }
+}
+
+struct RedactWordmark: View {
     let palette: Palette
     var body: some View {
-        HStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(palette.accentGradient)
-                .frame(width: 28, height: 28)
-                .overlay(Image(systemName: "aperture").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white))
-            Text("REDACT")
-                .font(.system(size: 17, weight: .heavy, design: .rounded))
-                .tracking(1.2)
+        HStack(spacing: 9) {
+            RedactMark(palette: palette)
+            Text("Redact")
+                .font(.system(size: 17, weight: .bold, design: .rounded))
                 .foregroundStyle(palette.textPrimary)
         }
     }
@@ -82,13 +104,12 @@ struct StatusPill: View {
         HStack(spacing: 6) {
             Circle()
                 .fill(isRunning ? AnyShapeStyle(palette.accentGradient) : AnyShapeStyle(palette.textSecondary.opacity(0.4)))
-                .frame(width: 7, height: 7)
-            Text(isRunning ? "LIVE" : "IDLE")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .tracking(0.8)
+                .frame(width: 6, height: 6)
+            Text(isRunning ? "Live" : "Idle")
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(isRunning ? palette.accent : palette.textSecondary)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 9)
         .padding(.vertical, 5)
         .background(palette.surfaceRaised, in: Capsule())
         .overlay(Capsule().strokeBorder(palette.border))
@@ -102,8 +123,8 @@ struct ThemeToggle: View {
             themeManager.toggle()
         } label: {
             Image(systemName: themeManager.theme == .dark ? "moon.fill" : "sun.max.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(themeManager.palette.textPrimary)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(themeManager.palette.textPrimary.opacity(0.85))
                 .frame(width: 28, height: 28)
                 .background(themeManager.palette.surfaceRaised, in: Circle())
                 .overlay(Circle().strokeBorder(themeManager.palette.border))
@@ -114,8 +135,9 @@ struct ThemeToggle: View {
 
 extension Text {
     func sectionLabel(_ palette: Palette) -> some View {
-        font(.system(size: 10, weight: .bold, design: .rounded))
-            .tracking(1.0)
+        font(.system(size: 10.5, weight: .semibold))
+            .tracking(0.8)
             .foregroundStyle(palette.textSecondary)
+            .textCase(.uppercase)
     }
 }
