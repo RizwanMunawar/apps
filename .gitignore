@@ -4,12 +4,12 @@
 Package.resolved
 
 # Packaged app / installer output (built via Scripts/build-app.sh and Scripts/build-dmg.sh)
-LiveBlur.app/
-LiveBlur.dmg
+Redact.app/
+Redact.dmg
 
 # macOS
 .DS_Store
 
-# Unrelated local project sharing this directory — not part of the LiveBlur repo
+# Unrelated local project sharing this directory — not part of the Redact repo
 food-label-translator/
 .npm_cache/
