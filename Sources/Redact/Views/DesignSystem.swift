@@ -21,9 +21,10 @@ extension View {
 struct RedactPrimaryButtonStyle: ButtonStyle {
     let palette: Palette
     var isDestructive = false
+    @Environment(\.sidebarZoom) private var zoom
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: 13 * zoom, weight: .semibold))
             .foregroundStyle(palette.onAccent)
             .padding(.vertical, 11)
             .frame(maxWidth: .infinity)
@@ -47,11 +48,12 @@ struct RedactPrimaryButtonStyle: ButtonStyle {
 struct RedactChipStyle: ButtonStyle {
     let palette: Palette
     var selected: Bool
+    @Environment(\.sidebarZoom) private var zoom
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .medium))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6.5)
+            .font(.system(size: 12 * zoom, weight: .medium))
+            .padding(.horizontal, 12 * zoom)
+            .padding(.vertical, 6.5 * zoom)
             .foregroundStyle(selected ? palette.onAccent : palette.textPrimary.opacity(0.72))
             .background {
                 if selected {
@@ -134,8 +136,8 @@ struct ThemeToggle: View {
 }
 
 extension Text {
-    func sectionLabel(_ palette: Palette) -> some View {
-        font(.system(size: 10.5, weight: .semibold))
+    func sectionLabel(_ palette: Palette, zoom: CGFloat = 1.0) -> some View {
+        font(.system(size: 10.5 * zoom, weight: .semibold))
             .tracking(0.8)
             .foregroundStyle(palette.textSecondary)
             .textCase(.uppercase)
