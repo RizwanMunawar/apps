@@ -8,9 +8,7 @@ enum AppInfo {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String).map { "v\($0)" } ?? ""
     }
 
-    // Source lives in the private RizwanMunawar/rizwanai monorepo (apps/redact), but its Releases
-    // aren't publicly downloadable from a private repo, so binaries ship from apps-releases, a
-    // small public repo shared by every app in this family (tagged "redact-v1.0.0" etc, one
-    // prefix per app, so they can all live in the same repo's Releases).
-    static let releaseURL = URL(string: "https://github.com/RizwanMunawar/apps-releases/releases/tag/redact-v1.0.0")!
+    // Redact ships as part of the apps-releases shell (one .dmg contains every app), so this
+    // points at the shell's own release rather than a Redact-only artifact.
+    static let releaseURL = URL(string: "https://github.com/RizwanMunawar/apps/releases/tag/v1.0.0")!
 }
