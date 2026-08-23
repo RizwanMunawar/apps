@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin{% endblock %} · Redact API</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+{% block body %}
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>Redact API<small>{{ brand }}</small></span>
+    </div>
+    <a class="nav-link {% if active == 'dashboard' %}active{% endif %}" href="/admin">Overview</a>
+    <a class="nav-link {% if active == 'customers' %}active{% endif %}" href="/admin/customers">Accounts</a>
+    <a class="nav-link {% if active == 'keys' %}active{% endif %}" href="/admin/keys">API keys</a>
+    <a class="nav-link {% if active == 'usage' %}active{% endif %}" href="/admin/usage">Usage</a>
+    <a class="nav-link" href="/docs">API reference ↗</a>
+    <div class="sidebar-foot">
+      <div class="who">{{ admin.email }}</div>
+      <form method="post" action="/admin/logout">
+        <button class="btn secondary small" type="submit">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% if flash %}<div class="flash ok">{{ flash }}</div>{% endif %}
+    {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
+</body>
+</html>

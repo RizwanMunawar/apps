@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_duration.html" import duration_field %}
+{% set active = 'customers' %}
+{% block title %}{{ customer.display_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ customer.display_name }}</h1>
+    <p class="subtitle">
+      {{ customer.email }}{% if customer.company %} · {{ customer.company }}{% endif %}
+      · <span class="badge {{ customer.status.value }}">{{ customer.status.value }}</span>
+    </p>
+  </div>
+  <form method="post" action="/admin/customers/{{ customer.id }}/status">
+    {% if customer.status.value == 'active' %}
+      <input type="hidden" name="new_status" value="suspended">
+      <button class="btn danger" type="submit">Suspend account</button>
+    {% else %}
+      <input type="hidden" name="new_status" value="active">
+      <button class="btn" type="submit">Reactivate account</button>
+    {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <h2>Issue a key to this account</h2>
+  <form method="post" action="/admin/keys">
+    <input type="hidden" name="customer_id" value="{{ customer.id }}">
+    <div class="row">
+      <div class="field">
+        <label for="label">Label <span class="hint">— what it's for</span></label>
+        <input type="text" name="label" id="label" placeholder="Production backend">
+      </div>
+      <div class="field">
+        <label for="environment">Environment</label>
+        <select name="environment" id="environment">
+          <option value="live">Live</option>
+          <option value="test">Test</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>{{ duration_field(durations) }}</div>
+      <div class="field">
+        <label for="monthly_quota">Monthly quota <span class="hint">— 0 = unlimited</span></label>
+        <input type="number" name="monthly_quota" id="monthly_quota" value="0" min="0">
+      </div>
+    </div>
+    <div class="check field">
+      <input type="checkbox" name="allow_video" id="allow_video" value="true" checked>
+      <label for="allow_video">Allow video redaction (slower and heavier than images)</label>
+    </div>
+    <button class="btn" type="submit">Generate key</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Keys on this account</h2>
+  {% if customer.keys %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Key</th><th>Label</th><th>Status</th><th>Expires</th><th>This month</th><th>Last used</th><th></th></tr></thead>
+      <tbody>
+      {% for key in customer.keys %}
+        <tr>
+          <td class="mono">{{ key.masked }}{% if key.environment.value == 'test' %} <span class="badge test">test</span>{% endif %}</td>
+          <td>{{ key.label }}</td>
+          <td><span class="badge {{ key.status }}">{{ key.status }}</span></td>
+          <td>{{ key.expires_label }}</td>
+          <td>{{ usage_by_key[key.id] }}{% if key.monthly_quota %} / {{ key.monthly_quota }}{% endif %}</td>
+          <td>{{ key.last_used_at.strftime('%Y-%m-%d %H:%M') if key.last_used_at else 'Never' }}</td>
+          <td class="actions">
+            <a class="btn secondary small" href="/admin/keys">Edit</a>
+            {% if not key.is_revoked %}
+            <form class="inline-form" method="post" action="/admin/keys/{{ key.id }}/revoke"
+                  onsubmit="return confirm('Revoke {{ key.masked }}? It stops working immediately.')">
+              <button class="btn danger small" type="submit">Revoke</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No keys yet. Generate one above.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% set active = 'customers' %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Accounts</h1>
+    <p class="subtitle">Who keys get issued to. Accounts don't sign in here — they only hold keys.</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>New account</h2>
+  <form method="post" action="/admin/customers">
+    <div class="row">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" name="email" id="email" required placeholder="dev@company.com">
+      </div>
+      <div class="field">
+        <label for="name">Name <span class="hint">— optional</span></label>
+        <input type="text" name="name" id="name">
+      </div>
+      <div class="field">
+        <label for="company">Company <span class="hint">— optional</span></label>
+        <input type="text" name="company" id="company">
+      </div>
+    </div>
+    <button class="btn" type="submit">Create account</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>{{ customers|length }} account{{ '' if customers|length == 1 else 's' }}</h2>
+  {% if customers %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Account</th><th>Company</th><th>Status</th><th>Active keys</th><th>Added</th><th></th></tr></thead>
+      <tbody>
+      {% for customer in customers %}
+        <tr>
+          <td>
+            <a href="/admin/customers/{{ customer.id }}"><strong>{{ customer.display_name }}</strong></a>
+            <div style="color:var(--text-secondary);font-size:12px">{{ customer.email }}</div>
+          </td>
+          <td>{{ customer.company or '—' }}</td>
+          <td><span class="badge {{ customer.status.value }}">{{ customer.status.value }}</span></td>
+          <td>{{ customer.active_key_count }}</td>
+          <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+          <td><a class="btn secondary small" href="/admin/customers/{{ customer.id }}">Manage</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No accounts yet. Create one above, then issue it a key.</p>
+  {% endif %}
+</div>
+{% endblock %}

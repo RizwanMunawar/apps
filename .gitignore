@@ -15,3 +15,11 @@ Redact.dmg
 # Unrelated local project sharing this directory — not part of this repo
 food-label-translator/
 .npm_cache/
+
+# Python service (services/)
+services/.venv/
+services/.env
+services/*.db
+services/*.pt
+__pycache__/
+*.pyc

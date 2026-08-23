@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% set active = 'dashboard' %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Overview</h1>
+    <p class="subtitle">Keys, accounts, and what the API served this month.</p>
+  </div>
+  <a class="btn" href="/admin/keys">Issue a key</a>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="value">{{ active_keys }}</div><div class="label">Active keys</div></div>
+  <div class="stat"><div class="value">{{ customer_count }}</div><div class="label">Accounts</div></div>
+  <div class="stat"><div class="value">{{ unassigned_keys }}</div><div class="label">Unassigned</div></div>
+  <div class="stat"><div class="value">{{ expired_keys }}</div><div class="label">Expired</div></div>
+  <div class="stat"><div class="value">{{ calls_this_month }}</div><div class="label">Calls this month</div></div>
+</div>
+
+<div class="card">
+  <h2>Expiring in the next 14 days</h2>
+  {% if expiring %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Key</th><th>Account</th><th>Label</th><th>Expires</th><th></th></tr></thead>
+      <tbody>
+      {% for key in expiring %}
+        <tr>
+          <td class="mono">{{ key.masked }}</td>
+          <td>{% if key.customer %}<a href="/admin/customers/{{ key.customer.id }}">{{ key.customer.display_name }}</a>{% else %}—{% endif %}</td>
+          <td>{{ key.label }}</td>
+          <td>{{ key.expires_label }}</td>
+          <td>
+            <form class="inline-form" method="post" action="/admin/keys/{{ key.id }}/expiry">
+              <input type="hidden" name="duration" value="365">
+              <button class="btn secondary small" type="submit">Extend 1 year</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Nothing expiring soon.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Recently issued</h2>
+  {% if recent_keys %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Key</th><th>Label</th><th>Account</th><th>Status</th><th>Expires</th><th>Issued</th></tr></thead>
+      <tbody>
+      {% for key in recent_keys %}
+        <tr>
+          <td class="mono">{{ key.masked }}</td>
+          <td>{{ key.label }}</td>
+          <td>{% if key.customer %}<a href="/admin/customers/{{ key.customer.id }}">{{ key.customer.display_name }}</a>{% else %}<span class="badge unassigned">unassigned</span>{% endif %}</td>
+          <td><span class="badge {{ key.status }}">{{ key.status }}</span></td>
+          <td>{{ key.expires_label }}</td>
+          <td>{{ key.created_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No keys yet. <a href="/admin/keys">Issue the first one.</a></p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Latest API calls</h2>
+  {% if recent_usage %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>When</th><th>Endpoint</th><th>Key</th><th>Status</th><th>Took</th><th>Redacted</th></tr></thead>
+      <tbody>
+      {% for record in recent_usage %}
+        <tr>
+          <td>{{ record.at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="mono">{{ record.endpoint }}</td>
+          <td class="mono">{{ record.key.masked }}</td>
+          <td><span class="badge {% if record.status_code < 400 %}active{% else %}expired{% endif %}">{{ record.status_code }}</span></td>
+          <td>{{ record.duration_ms }} ms</td>
+          <td>{{ record.detections }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No API calls recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

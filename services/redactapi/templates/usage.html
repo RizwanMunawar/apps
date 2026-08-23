@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% set active = 'usage' %}
+{% block title %}Usage{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Usage</h1>
+    <p class="subtitle">The last 200 API calls. Only successful calls count against a key's quota.</p>
+  </div>
+</div>
+
+<div class="card">
+  {% if records %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>When</th><th>Endpoint</th><th>Key</th><th>Account</th><th>Status</th><th>Took</th><th>Uploaded</th><th>Redacted</th></tr></thead>
+      <tbody>
+      {% for record in records %}
+        <tr>
+          <td>{{ record.at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td class="mono">{{ record.endpoint }}</td>
+          <td class="mono">{{ record.key.masked }}</td>
+          <td>{% if record.key.customer %}<a href="/admin/customers/{{ record.key.customer.id }}">{{ record.key.customer.display_name }}</a>{% else %}—{% endif %}</td>
+          <td><span class="badge {% if record.status_code < 400 %}active{% else %}expired{% endif %}">{{ record.status_code }}</span></td>
+          <td>{{ record.duration_ms }} ms</td>
+          <td>{{ (record.bytes_in / 1024) | round | int }} KB</td>
+          <td>{{ record.detections }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Nothing yet. Usage appears here as soon as a key makes its first call.</p>
+  {% endif %}
+</div>
+{% endblock %}

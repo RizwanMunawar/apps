@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set active = 'keys' %}
+{% block title %}{{ 'Key rotated' if rotated else 'Key created' }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Key rotated' if rotated else 'Key created' }}</h1>
+    <p class="subtitle">Copy it now — this is the only time it is ever shown.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="secret-box">
+    <span id="secret">{{ secret }}</span>
+    <button class="btn small" type="button"
+            onclick="navigator.clipboard.writeText(document.getElementById('secret').textContent.trim()).then(() => this.textContent = 'Copied')">
+      Copy
+    </button>
+  </div>
+
+  <div class="warn-note">
+    Only a SHA-256 hash of this key is stored, so it cannot be looked up or recovered later.
+    If it is lost, rotate the key to issue a fresh secret.
+    {% if rotated %}The previous secret stopped working the moment this one was issued.{% endif %}
+  </div>
+
+  <table>
+    <tbody>
+      <tr><td><strong>Label</strong></td><td>{{ key.label }}</td></tr>
+      <tr><td><strong>Assigned to</strong></td><td>
+        {% if key.customer %}<a href="/admin/customers/{{ key.customer.id }}">{{ key.customer.display_name }} · {{ key.customer.email }}</a>
+        {% else %}<span class="badge unassigned">unassigned</span> — it will not authenticate until assigned{% endif %}
+      </td></tr>
+      <tr><td><strong>Environment</strong></td><td>{{ key.environment.value }}</td></tr>
+      <tr><td><strong>Expires</strong></td><td>
+        {% if key.expires_at %}{{ key.expires_at.strftime('%Y-%m-%d %H:%M UTC') }} ({{ key.expires_label }}){% else %}Never{% endif %}
+      </td></tr>
+      <tr><td><strong>Monthly quota</strong></td><td>{{ key.monthly_quota or 'Unlimited' }}</td></tr>
+      <tr><td><strong>Video</strong></td><td>{{ 'Allowed' if key.allow_video else 'Not allowed' }}</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:24px">Using it</h2>
+  <div class="secret-box" style="display:block;white-space:pre-wrap">curl -X POST {{ base_url }}/v1/redact/image \
+  -H "Authorization: Bearer {{ secret }}" \
+  -F "file=@photo.jpg" \
+  -F "classes=0" \
+  -F "style=pixelate" \
+  -F "method=box" \
+  -F "strength=25" \
+  -o redacted.png</div>
+
+  <p style="margin-top:20px"><a class="btn" href="{{ back }}">Done</a></p>
+</div>
+{% endblock %}

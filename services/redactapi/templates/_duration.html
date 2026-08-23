@@ -1,0 +1,17 @@
+{# The "how long should this key live" control, shared by every form that sets an expiry.
+   Selecting "Custom date…" reveals the datetime field; everything else hides it. #}
+{% macro duration_field(durations, selected='365', id_suffix='') %}
+<div class="field">
+  <label for="duration{{ id_suffix }}">Expires <span class="hint">— how long this key stays valid</span></label>
+  <select name="duration" id="duration{{ id_suffix }}"
+          onchange="document.getElementById('custom{{ id_suffix }}').style.display = this.value === 'custom' ? 'block' : 'none'">
+    {% for value, label in durations %}
+      <option value="{{ value }}" {% if value == selected %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</div>
+<div class="field" id="custom{{ id_suffix }}" style="display:none">
+  <label for="custom_date{{ id_suffix }}">Custom expiry <span class="hint">— UTC</span></label>
+  <input type="datetime-local" name="custom_date" id="custom_date{{ id_suffix }}">
+</div>
+{% endmacro %}
