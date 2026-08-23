@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Your licences · Redact | RizwanAI Apps{% endblock %}
+{% block head_extra %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body %}
+<div class="shell">
+  <main class="main" style="margin:0 auto">
+    <div class="page-head">
+      <div>
+        <h1>Your Redact licences</h1>
+        <p class="subtitle">{{ customer.display_name }} · {{ customer.email }}</p>
+      </div>
+      <form method="post" action="/apps/license/logout">
+        <button class="btn secondary" type="submit">Sign out</button>
+      </form>
+    </div>
+
+    {% if flash %}<div class="flash ok">{{ flash }}</div>{% endif %}
+    {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
+
+    {% if trial_available %}
+    <div class="card">
+      <h2>Start your {{ trial_days }}-day trial</h2>
+      <p class="subtitle" style="margin-bottom:14px">
+        Full Redact on one Mac for {{ trial_days }} days. One trial per account — starting it
+        now uses it up, and it cannot be restarted or extended.
+      </p>
+      <form method="post" action="/apps/license/trial">
+        <button class="btn" type="submit">Start my {{ trial_days }}-day trial</button>
+      </form>
+    </div>
+    {% elif trial and trial.is_expired %}
+    <div class="card">
+      <h2>Your trial has ended</h2>
+      <p class="subtitle">
+        The {{ trial_days }}-day trial on this account expired on
+        {{ trial.expires_at.strftime('%Y-%m-%d') }}. Redact needs a licence to keep working.
+        Contact us to arrange one.
+      </p>
+    </div>
+    {% endif %}
+
+    {% for row in licenses %}
+    <div class="card">
+      <h2>
+        {% if row.kind.value == 'trial' %}{{ trial_days }}-day trial{% else %}Redact licence{% endif %}
+        <span class="badge {{ 'active' if row.display_status == 'active' else ('unassigned' if row.display_status == 'awaiting signature' else 'expired') }}">{{ row.display_status }}</span>
+      </h2>
+
+      <table>
+        <tbody>
+          <tr><td><strong>Licence</strong></td><td class="mono">{{ row.license_id }}</td></tr>
+          <tr><td><strong>Seats</strong></td><td>{{ row.seats_used }} of {{ row.seats }} in use</td></tr>
+          <tr><td><strong>Expires</strong></td><td>
+            {% if row.expires_at %}{{ row.expires_at.strftime('%Y-%m-%d') }} ({{ row.expires_label }}){% else %}Perpetual{% endif %}
+          </td></tr>
+        </tbody>
+      </table>
+
+      {% if row.token %}
+      <label style="margin-top:18px">Licence key — paste this into Redact on your Mac</label>
+      <div class="secret-box">
+        <span id="tok{{ row.id }}" style="font-size:11.5px">{{ row.token }}</span>
+        <button class="btn small" type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('tok{{ row.id }}').textContent.trim()).then(() => this.textContent = 'Copied')">
+          Copy
+        </button>
+      </div>
+      {% elif row.status.value == 'draft' %}
+      <p class="subtitle" style="margin-top:14px">
+        This licence is being prepared. It will appear here once it is signed.
+      </p>
+      {% endif %}
+
+      {% if row.activations %}
+      <h2 style="margin-top:22px;font-size:13px">Machines using this licence</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Machine</th><th>Activated</th><th>Last seen</th><th></th></tr></thead>
+          <tbody>
+          {% for seat in row.activations if not seat.deactivated_at %}
+            <tr>
+              <td>{{ seat.machine_name or 'Unnamed Mac' }}</td>
+              <td>{{ seat.activated_at.strftime('%Y-%m-%d') }}</td>
+              <td>{{ seat.last_seen_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>
+                <form class="inline-form" method="post" action="/apps/license/seats/{{ seat.id }}/release"
+                      onsubmit="return confirm('Release {{ seat.machine_name or 'this Mac' }}? Redact will stop working there when it next checks in.')">
+                  <button class="btn secondary small" type="submit">Release</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if not licenses %}
+    <div class="card"><p class="empty">No licences on this account yet.</p></div>
+    {% endif %}
+  </main>
+</div>
+{% endblock %}

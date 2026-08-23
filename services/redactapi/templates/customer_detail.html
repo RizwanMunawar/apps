@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_duration.html" import duration_field %}
 {% set active = 'customers' %}
-{% block title %}{{ customer.display_name }}{% endblock %}
+{% block title %}{{ customer.display_name }} · Redact API{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -19,6 +19,26 @@
       <input type="hidden" name="new_status" value="active">
       <button class="btn" type="submit">Reactivate account</button>
     {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <h2>Portal access</h2>
+  <p class="subtitle" style="margin-bottom:14px">
+    {% if customer.password_hash %}
+      This account can sign in at /apps/license.
+      {% if customer.last_login_at %}Last signed in {{ customer.last_login_at.strftime('%Y-%m-%d %H:%M UTC') }}.{% endif %}
+    {% elif customer.invite_is_live %}
+      An invite is outstanding, valid until {{ customer.invite_expires_at.strftime('%Y-%m-%d %H:%M UTC') }}.
+    {% else %}
+      No password set, so this account cannot sign in yet. Send an invite so they can set one —
+      you never see it.
+    {% endif %}
+  </p>
+  <form method="post" action="/admin/customers/{{ customer.id }}/invite">
+    <button class="btn secondary" type="submit">
+      {% if customer.password_hash %}Send a password-reset invite{% else %}Create invite link{% endif %}
+    </button>
   </form>
 </div>
 

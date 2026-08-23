@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_duration.html" import duration_field %}
+{% set active = 'licenses' %}
+{% block title %}App licenses · Redact API{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>App licenses</h1>
+    <p class="subtitle">Licenses that unlock the Mac app. Issuing records a draft — signing happens offline.</p>
+  </div>
+</div>
+
+{% if not signing_ready %}
+<div class="flash bad">
+  No <code>REDACT_LICENSE_PUBLIC_KEY</code> is configured, so signed licenses can't be verified here.
+  Run <code>python3 -m redactapi.licensetool keygen</code> and put the public key in <code>services/.env</code>.
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Issue a license</h2>
+  <p class="subtitle" style="margin-bottom:14px">
+    This creates a draft. Nothing it produces unlocks an app until you sign it with the key on your own machine.
+  </p>
+  <form method="post" action="/admin/licenses">
+    <div class="row">
+      <div class="field">
+        <label for="customer_id">Account <span class="hint">— required; every license belongs to one</span></label>
+        <select name="customer_id" id="customer_id" required>
+          <option value="">— Choose an account —</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}">{{ customer.display_name }} · {{ customer.email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="seats">Seats <span class="hint">— Macs allowed</span></label>
+        <input type="number" name="seats" id="seats" value="1" min="1" required>
+      </div>
+    </div>
+    <div class="row">
+      <div>{{ duration_field(durations, selected='never', id_suffix='_lic') }}</div>
+      <div class="field">
+        <label>Features</label>
+        <div style="display:flex;flex-wrap:wrap;gap:14px;padding-top:5px">
+          {% for value, label in features %}
+          <span class="check">
+            <input type="checkbox" name="feature" id="f_{{ value }}" value="{{ value }}"
+                   {% if value == 'redact' %}checked{% endif %}>
+            <label for="f_{{ value }}">{{ label }}</label>
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="notes">Notes <span class="hint">— internal, e.g. PO number</span></label>
+      <input type="text" name="notes" id="notes">
+    </div>
+    <button class="btn" type="submit">Create draft</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>
+    {{ licenses|length }} license{{ '' if licenses|length == 1 else 's' }}
+    <span style="font-weight:400;color:var(--text-secondary)">
+      · <a href="/admin/licenses">all</a>
+      · <a href="/admin/licenses?status_filter=awaiting signature">awaiting signature</a>
+      · <a href="/admin/licenses?status_filter=active">active</a>
+      · <a href="/admin/licenses?status_filter=expired">expired</a>
+      · <a href="/admin/licenses?status_filter=revoked">revoked</a>
+    </span>
+  </h2>
+  {% if licenses %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>License</th><th>Account</th><th>Type</th><th>Status</th><th>Seats</th><th>Expires</th><th></th></tr></thead>
+      <tbody>
+      {% for row in licenses %}
+        <tr>
+          <td class="mono">{{ row.license_id }}</td>
+          <td><a href="/admin/customers/{{ row.customer.id }}">{{ row.customer.display_name }}</a></td>
+          <td>{% if row.kind.value == 'trial' %}<span class="badge test">trial</span>{% else %}full{% endif %}</td>
+          <td><span class="badge {{ 'active' if row.display_status == 'active' else ('unassigned' if row.display_status == 'awaiting signature' else 'expired') }}">{{ row.display_status }}</span></td>
+          <td>{{ row.seats_used }} / {{ row.seats }}</td>
+          <td>{{ row.expires_label }}</td>
+          <td><a class="btn secondary small" href="/admin/licenses/{{ row.id }}">Open</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No licenses{% if status_filter %} with status “{{ status_filter }}”{% endif %}.</p>
+  {% endif %}
+</div>
+{% endblock %}

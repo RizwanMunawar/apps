@@ -1,4 +1,5 @@
 import AVFoundation
+import AppCore
 import CoreImage
 import Foundation
 import Redact
@@ -433,6 +434,111 @@ if let modelPath = ProcessInfo.processInfo.environment["REDACT_MODEL"] {
         print("        task: \(detector.info.task), classes: \(detector.info.classCount), first: \(detector.classes.first?.name ?? "-")")
     } catch {
         check("importing the model succeeds", false, error.localizedDescription)
+    }
+}
+
+// MARK: - Licensing interop
+//
+// The Swift verifier and the Python signer have to agree on the exact bytes that were signed. If
+// either side ever changes how the payload is serialised, every license in the field stops
+// verifying — so the agreement is checked here rather than discovered by a customer.
+//
+// Tokens are supplied by the Python side:
+//     REDACT_TEST_LICENSE_PUBLIC_KEY, REDACT_TEST_TRIAL_PUBLIC_KEY,
+//     REDACT_TEST_FULL_TOKEN, REDACT_TEST_TRIAL_TOKEN, REDACT_TEST_FORGED_TOKEN
+// When they are absent this section is skipped, so `swift run redact-selfcheck` still works
+// standalone.
+
+let environment = ProcessInfo.processInfo.environment
+
+// A release build with no keys compiled in does not enforce licensing at all. That is a
+// packaging slip that is invisible at runtime, so it is caught here instead.
+print("\nLicensing build configuration")
+if environment["REDACT_REQUIRE_LICENSE_KEYS"] == "1" {
+    check("license public keys are compiled into this build", LicenseVerifier.isConfigured,
+          "set LicenseVerifier.licensePublicKey and .trialPublicKey before releasing")
+} else {
+    print("  SKIP  key check (set REDACT_REQUIRE_LICENSE_KEYS=1 in your release script)")
+}
+
+if let licenseKey = environment["REDACT_TEST_LICENSE_PUBLIC_KEY"],
+   let trialKey = environment["REDACT_TEST_TRIAL_PUBLIC_KEY"] {
+    print("\nLicensing interop with the Python signer")
+
+    func verify(_ token: String) throws -> LicenseToken {
+        try LicenseVerifier.verify(token, licenseKey: licenseKey, trialKey: trialKey)
+    }
+
+    if let full = environment["REDACT_TEST_FULL_TOKEN"] {
+        do {
+            let token = try verify(full)
+            check("a Python-signed full license verifies in Swift", token.kind == .full)
+            check("the account survives the round trip", token.accountEmail == "dev@acme.com",
+                  token.accountEmail)
+            check("the seat count survives the round trip", token.seats == 25, "\(token.seats)")
+            check("features survive the round trip", token.has("recorder"),
+                  token.features.joined(separator: ","))
+            check("a perpetual license reports no expiry", token.expiresAt == nil)
+        } catch {
+            check("a Python-signed full license verifies in Swift", false,
+                  error.localizedDescription)
+        }
+    }
+
+    if let trial = environment["REDACT_TEST_TRIAL_TOKEN"] {
+        do {
+            let token = try verify(trial)
+            check("a Python-signed trial verifies in Swift", token.kind == .trial)
+            check("the trial reports 14 days or fewer remaining",
+                  (token.daysRemaining ?? 99) <= 14, "\(token.daysRemaining ?? -1)")
+        } catch {
+            check("a Python-signed trial verifies in Swift", false, error.localizedDescription)
+        }
+    }
+
+    // The one that matters: a full license signed with the *server's* trial key must be refused,
+    // because that is exactly what a compromised backend would produce.
+    if let forged = environment["REDACT_TEST_FORGED_TOKEN"] {
+        do {
+            _ = try verify(forged)
+            check("a full license forged with the server's trial key is refused", false,
+                  "it was accepted")
+        } catch {
+            check("a full license forged with the server's trial key is refused", true)
+        }
+    }
+
+    if let full = environment["REDACT_TEST_FULL_TOKEN"] {
+        // Flip one character in the signature.
+        let tampered = String(full.dropLast(4)) + (full.hasSuffix("AAAA") ? "BBBB" : "AAAA")
+        do {
+            _ = try verify(tampered)
+            check("a tampered signature is refused", false, "it was accepted")
+        } catch {
+            check("a tampered signature is refused", true)
+        }
+
+        // Swap in the wrong verification key.
+        do {
+            _ = try LicenseVerifier.verify(full, licenseKey: trialKey, trialKey: trialKey)
+            check("verifying against the wrong key fails", false, "it was accepted")
+        } catch {
+            check("verifying against the wrong key fails", true)
+        }
+    }
+
+    for (label, garbage) in [
+        ("empty string", ""),
+        ("missing prefix", "eyJhIjoxfQ.AAAA"),
+        ("wrong prefix", "RZAI9.eyJhIjoxfQ.AAAA"),
+        ("too few segments", "RZAI1.eyJhIjoxfQ"),
+    ] {
+        do {
+            _ = try verify(garbage)
+            check("garbage is refused (\(label))", false, "it was accepted")
+        } catch {
+            check("garbage is refused (\(label))", true)
+        }
     }
 }
 

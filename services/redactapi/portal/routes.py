@@ -1,6 +1,7 @@
 """The admin portal: issue keys, assign them to accounts, set how long they live."""
 from __future__ import annotations
 
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Form, Request, status
@@ -208,6 +209,30 @@ def set_customer_status(
     session.commit()
     # Suspension bites immediately: require_api_key rejects every key on a suspended account.
     return redirect(f"/admin/customers/{customer_id}", flash=f"Account {customer.status.value}.")
+
+
+@router.post("/customers/{customer_id}/invite")
+def create_invite(
+    request: Request,
+    customer_id: int,
+    admin: Admin = Depends(require_admin),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Mint a one-time link that lets this account set its own password.
+
+    The admin never learns the password, and the link dies on first use or after 7 days —
+    so a forwarded invite email is not a standing way in.
+    """
+    customer = session.get(Customer, customer_id)
+    if customer is None:
+        return redirect("/admin/customers", error="No such account.")
+
+    customer.invite_token = secrets.token_urlsafe(32)
+    customer.invite_expires_at = utcnow() + timedelta(days=7)
+    session.commit()
+
+    link = f"{config.SITE_ORIGIN}/apps/license/invite/{customer.invite_token}"
+    return redirect(f"/admin/customers/{customer_id}", flash=f"Invite link (valid 7 days): {link}")
 
 
 # --- Keys --------------------------------------------------------------------------------

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Redact for Mac — Licensing & {{ trial_days }}-Day Trial | RizwanAI Apps{% endblock %}
+{% block head_extra %}
+  <meta name="description" content="Manage your Redact for Mac licence: activate a {{ trial_days }}-day trial, view seats, and release machines. On-device object redaction for teams that cannot send footage to the cloud.">
+  <link rel="canonical" href="{{ canonical }}">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RizwanAI Apps">
+  <meta property="og:title" content="Redact for Mac — Licensing & {{ trial_days }}-Day Trial">
+  <meta property="og:description" content="Activate and manage your Redact licence. On-device object redaction for Mac — nothing leaves the machine.">
+  <meta property="og:url" content="{{ canonical }}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Redact for Mac — Licensing & {{ trial_days }}-Day Trial">
+  <meta name="twitter:description" content="Activate and manage your Redact licence. On-device object redaction for Mac.">
+  {# JSON-LD describes the product this page licenses, which is what a crawler can legitimately
+     learn from a page whose data sits behind a sign-in. #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Redact",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "macOS",
+    "description": "On-device object redaction for Mac. Blurs or pixelates selected objects in live camera, video and image files without sending anything off the machine.",
+    "url": "{{ canonical }}",
+    "publisher": { "@type": "Organization", "name": "RizwanAI Apps", "url": "{{ site_origin }}" },
+    "offers": { "@type": "Offer", "category": "Commercial licence", "url": "{{ canonical }}" }
+  }
+  </script>
+{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-card" style="max-width:430px">
+    <div class="brand" style="justify-content:center">
+      <span class="dot"></span>
+      <span>Redact licensing<small>{{ brand }}</small></span>
+    </div>
+
+    {% if flash %}<div class="flash ok">{{ flash }}</div>{% endif %}
+    {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
+
+    <div class="card">
+      <h1 style="font-size:19px;margin-bottom:6px">Your Redact licence</h1>
+      <p class="subtitle" style="margin-bottom:16px">
+        Sign in to activate Redact for Mac, start your {{ trial_days }}-day trial, and manage the
+        machines using your seats.
+      </p>
+
+      <form method="post" action="/apps/license/login">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" name="email" id="email" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" name="password" id="password" required autocomplete="current-password">
+        </div>
+        <button class="btn" type="submit" style="width:100%">Sign in</button>
+      </form>
+
+      {% if open_signup %}
+      <p class="subtitle" style="margin-top:16px;text-align:center">
+        No account? <a href="#create">Create one</a> to start a {{ trial_days }}-day trial.
+      </p>
+      {% else %}
+      <div class="warn-note" style="margin-top:18px">
+        Accounts are issued by invitation. If your organisation has bought Redact, we have sent
+        an invite link to your work address — that link is how you set your password.
+      </div>
+      {% endif %}
+    </div>
+
+    {# Content a crawler can actually read. The licence data itself stays behind the sign-in. #}
+    <div class="card">
+      <h2>About Redact for Mac</h2>
+      <p class="subtitle">
+        Redact hides people, faces, licence plates and any other object its model can detect —
+        in a live camera feed, a video file, or a still image. Every frame is processed on the
+        Mac itself: no upload, no cloud, no API key, nothing to leak.
+      </p>
+      <ul class="subtitle" style="margin:12px 0 0;padding-left:18px;line-height:1.9">
+        <li>Pixelate or blur, by bounding box or by the object's own outline</li>
+        <li>Choose exactly which classes to hide, or import your own model</li>
+        <li>Record the app while it works, for review and demos</li>
+        <li>{{ trial_days }}-day trial, then a perpetual or fixed-term licence per machine</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

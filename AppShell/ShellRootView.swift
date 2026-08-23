@@ -19,6 +19,8 @@ struct ShellRootView: View {
 
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var updateChecker = UpdateChecker()
+    @ObservedObject private var recorder = SessionRecorder.shared
+    @ObservedObject private var licensing = LicenseManager.shared
     @State private var phase: ShellPhase = .splash
     // Defaults to the first registered app so opening the shell drops you straight into something
     // useful; the sidebar and the title-bar mark both go back to the hub.
@@ -50,11 +52,15 @@ struct ShellRootView: View {
         .preferredColorScheme(palette.colorScheme)
         .animation(.easeInOut(duration: 0.2), value: themeManager.theme)
         .task {
+            licensing.refresh()
             try? await Task.sleep(for: .seconds(1.2))
             guard phase == .splash else { return }
             withAnimation(.easeInOut(duration: 0.3)) { phase = .ready }
             // Throttled to once a day inside the checker, so this is cheap on every launch.
             await updateChecker.check()
+            // Revocation only ever takes access away, and a failure to reach the service leaves
+            // the local verdict alone, so this can run quietly after the window is already up.
+            await licensing.checkRevocation()
         }
     }
 
@@ -64,6 +70,7 @@ struct ShellRootView: View {
                 selected: selected,
                 palette: palette,
                 themeManager: themeManager,
+                recorder: recorder,
                 inspectorCollapsed: $inspectorCollapsed,
                 goHome: { withAnimation(.easeInOut(duration: 0.18)) { selected = nil } }
             )
@@ -78,10 +85,32 @@ struct ShellRootView: View {
             VersionBadge(checker: updateChecker, palette: palette)
                 .padding(10)
         }
+        .overlay(alignment: .bottomTrailing) {
+            if let url = recorder.lastOutputURL {
+                RecordingSavedToast(url: url, palette: palette, recorder: recorder)
+                    .padding(12)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: recorder.lastOutputURL)
+        .alert(
+            "Recording",
+            isPresented: Binding(
+                get: { recorder.errorMessage != nil },
+                set: { if !$0 { recorder.errorMessage = nil } }
+            ),
+            actions: { Button("OK", role: .cancel) { recorder.errorMessage = nil } },
+            message: { Text(recorder.errorMessage ?? "") }
+        )
     }
 
     @ViewBuilder private var content: some View {
-        if let selected {
+        // One gate for the whole shell rather than per-app checks: every app behind it is paid
+        // for by the same license, and a check that lives in one place cannot be forgotten when
+        // the next app is added.
+        if !licensing.state.allowsUse {
+            LicenseGateView(licensing: licensing, palette: palette)
+        } else if let selected {
             AppContainer(id: selected, palette: palette, inspectorCollapsed: inspectorCollapsed)
         } else {
             AppHubView(selected: $selected, palette: palette)

@@ -123,3 +123,31 @@ def require_admin(admin: Admin | None = Depends(current_admin)) -> Admin:
     if admin is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Sign in required.")
     return admin
+
+
+# --- Customer sessions -------------------------------------------------------------------
+# Deliberately a different session key from the admin one. A customer session can never be
+# mistaken for an admin session, so no amount of cookie tampering promotes a customer into
+# /admin — the two look up different tables entirely.
+
+CUSTOMER_SESSION_KEY = "customer_id"
+
+
+def current_customer(request: Request, session: Session = Depends(get_session)):
+    from .models import Customer
+
+    customer_id = request.session.get(CUSTOMER_SESSION_KEY)
+    if customer_id is None:
+        return None
+    customer = session.get(Customer, customer_id)
+    # A suspended or password-less account loses its session immediately, without waiting for
+    # the cookie to expire.
+    return customer if customer and customer.can_sign_in else None
+
+
+def require_customer(customer=Depends(current_customer)):
+    if customer is None:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, detail="Sign in to view your licenses."
+        )
+    return customer

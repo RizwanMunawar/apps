@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Admin{% endblock %} · Redact API</title>
+  <title>{% block title %}Admin · Redact API{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
+{% block head_extra %}{% endblock %}
 </head>
 <body>
 {% block body %}
@@ -17,6 +18,10 @@
     <a class="nav-link {% if active == 'dashboard' %}active{% endif %}" href="/admin">Overview</a>
     <a class="nav-link {% if active == 'customers' %}active{% endif %}" href="/admin/customers">Accounts</a>
     <a class="nav-link {% if active == 'keys' %}active{% endif %}" href="/admin/keys">API keys</a>
+    <a class="nav-link {% if active == 'licenses' %}active{% endif %}" href="/admin/licenses">
+      App licenses
+      {% if drafts_awaiting %}<span class="badge unassigned">{{ drafts_awaiting }}</span>{% endif %}
+    </a>
     <a class="nav-link {% if active == 'usage' %}active{% endif %}" href="/admin/usage">Usage</a>
     <a class="nav-link" href="/docs">API reference ↗</a>
     <div class="sidebar-foot">

@@ -2,11 +2,13 @@
 
 Two faces of one FastAPI process:
 
-| Path      | What it is                                                    | Auth                        |
-|-----------|---------------------------------------------------------------|-----------------------------|
-| `/v1/*`   | Hosted redaction API for third-party developers               | `Authorization: Bearer rdk_…` |
-| `/admin/*`| Admin portal — issue keys, assign them, set how long they live | Session cookie              |
-| `/docs`   | Generated OpenAPI reference                                    | —                           |
+| Path             | What it is                                                     | Auth                          |
+|------------------|----------------------------------------------------------------|-------------------------------|
+| `/v1/*`          | Hosted redaction API for third-party developers                | `Authorization: Bearer rdk_…` |
+| `/v1/license/*`  | The Mac app's licensing channel — trials, activation, heartbeat | Account credentials or token  |
+| `/admin/*`       | Admin portal — API keys **and** app licences                   | Admin session cookie          |
+| `/apps/license`  | Customer licensing portal                                      | Customer session cookie       |
+| `/docs`          | Generated OpenAPI reference                                    | —                             |
 
 The macOS app in this repo is unchanged and still fully offline. This service is the separate,
 hosted product: the same detect-and-blur pipeline, reachable over HTTP, gated by keys you issue.
@@ -98,10 +100,104 @@ macOS app muxes the original track back in, which needs ffmpeg and is not wired 
 ## Tests
 
 ```bash
-.venv/bin/python test_portal.py   # 45 checks: auth, issuance, assignment, expiry, quota
-.venv/bin/python test_engine.py   # 34 checks: compositing, masks, bounds, strength
+.venv/bin/python test_portal.py     # 45 checks: auth, issuance, assignment, expiry, quota
+.venv/bin/python test_engine.py     # 34 checks: compositing, masks, bounds, strength
+.venv/bin/python test_licensing.py  # 52 checks: invites, trials, seats, forgery, revocation, SEO
+```
+
+The Swift verifier is checked against the Python signer separately, because both sides have to
+agree on the exact bytes that were signed:
+
+```bash
+swift run redact-selfcheck   # with REDACT_TEST_* tokens exported by the Python side
 ```
 
 `test_engine.py` stubs the detector, so both suites run without ultralytics or torch installed.
 Real inference needs `pip install ultralytics`, which pulls torch (~2 GB); the weights named by
 `REDACT_MODEL` download on the first redaction call.
+
+
+---
+
+# App licensing
+
+Separate from the API keys above. API keys gate the *hosted API*; licences gate the *Mac app*.
+They share accounts and the admin panel and nothing else.
+
+## The two-keypair split
+
+The requirement was that someone who gets into the admin panel still cannot mint a licence. That
+rules out keeping a signing key on the server, so there are two keypairs with deliberately
+different powers:
+
+| Keypair     | Private half lives    | Can sign        | If stolen                          |
+|-------------|-----------------------|-----------------|------------------------------------|
+| **Licence** | Only on your Mac      | Full licences   | Total compromise — guard this file |
+| **Trial**   | On the server (`.env`)| Trials only     | An attacker gets a 14-day trial    |
+
+Anything signed by the trial key is capped at 14 days *by the verifier*, on both the server and
+in the app, and is refused outright if it claims to be a full licence. So a fully compromised
+backend yields nothing better than the trial anyone could have asked for.
+
+Set them up once:
+
+```bash
+python3 -m redactapi.licensetool keygen           # licence keypair — private stays on your Mac
+python3 -m redactapi.licensetool keygen --trial   # trial keypair — private goes in .env
+```
+
+Put both public keys in `services/.env`, and both into `LicenseVerifier` in
+`Shared/Licensing/LicenseToken.swift`. **A build with empty keys does not enforce licensing at
+all** — it fails open rather than bricking the app on a packaging slip. Catch that in your
+release script:
+
+```bash
+REDACT_REQUIRE_LICENSE_KEYS=1 swift run redact-selfcheck
+```
+
+## Issuing a licence
+
+The admin panel never signs. Issuing records a *draft*:
+
+1. **Admin → App licenses → Issue** — pick the account, seats, expiry, features.
+2. The draft page shows a command. Run it on your own Mac:
+   `python3 -m redactapi.licensetool sign --draft <draft>`
+3. Paste the signed token back. It is verified against the public key — signature, licence id,
+   account and seat count all have to match — before it is stored.
+
+A draft unlocks nothing. Someone who owns the admin panel can create drafts all day and not one
+of them will start the app.
+
+## Trials
+
+Fourteen days, one per account, ever. Re-requesting returns the same token, expired or not.
+Because a trial needs an account and accounts are invitation-only by default
+(`REDACT_OPEN_SIGNUP=0`), there is no self-serve path to a second trial.
+
+In the app, the trial is also defended against the obvious local attack: the Keychain holds a
+watermark of the latest date ever seen, so winding the clock back shows up as time running
+backwards and blocks the app rather than reviving an expired trial. Tolerance is 6 hours, so
+timezone changes and NTP corrections are not mistaken for tampering. Storing the token in the
+Keychain also means deleting and reinstalling the app does not reset a used trial.
+
+## Accounts
+
+Invitation-only unless you set `REDACT_OPEN_SIGNUP=1`. The admin creates the account and presses
+**Create invite link**; the customer sets their own password through that link, which works once
+and expires after 7 days. You never see their password.
+
+Customers and admins are different tables with different session cookies, so a customer session
+can never be escalated into an admin one.
+
+## Revocation
+
+The app verifies offline, so revocation only bites when the machine next reaches
+`/v1/license/heartbeat`. That is the deliberate trade for an app that keeps working on a plane.
+The heartbeat can only ever *remove* access, never grant it, so a spoofed service cannot unlock
+anything.
+
+## What is not built
+
+- **Payments/billing.** Licences are issued by hand after you agree a deal.
+- **Email delivery.** Invite links are shown in the panel for you to send yourself.
+- **Seat transfer self-service** beyond releasing a machine.

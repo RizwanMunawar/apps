@@ -53,9 +53,11 @@ struct RedactControlPanel: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     StepSection(
-                        1, mode == .live ? "Choose your camera" : "Choose video or image",
+                        1, "What to redact",
                         palette: palette, state: sourceState,
-                        hint: mode == .file ? "Pick the file you want to redact." : nil
+                        hint: mode == .live
+                            ? "Your camera, redacted live as you move."
+                            : "Pick the video or image you want to redact."
                     ) {
                         SourceStep(mode: $mode, viewModel: viewModel, fileViewModel: fileViewModel, palette: palette)
                     }
@@ -125,9 +127,14 @@ private struct SourceStep: View {
                     Button {
                         mode = candidate
                     } label: {
-                        Text(candidate.emoji)
-                            .font(.system(size: 27))
-                            .frame(width: 52, height: 42)
+                        VStack(spacing: 1) {
+                            Text(candidate.emoji)
+                                .font(.system(size: 22))
+                            Text(candidate.shortLabel)
+                                .font(AppFont.text(9, weight: .semibold))
+                                .foregroundStyle(mode == candidate ? palette.accent : palette.textSecondary)
+                        }
+                            .frame(width: 62, height: 48)
                             .contentShape(Rectangle())
                             .background(
                                 RoundedRectangle(cornerRadius: 4, style: .continuous)

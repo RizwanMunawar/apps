@@ -3,8 +3,17 @@ import SwiftUI
 
 public enum RedactMode: String, CaseIterable, Identifiable {
     case live = "Live camera"
-    case file = "Process file"
+    case file = "Video or image file"
     public var id: String { rawValue }
+
+    /// The word under the chip. Neither mode records anything — recording the app itself is a
+    /// separate control in the title bar — so these say plainly what goes *in*.
+    var shortLabel: String {
+        switch self {
+        case .live: return "Camera"
+        case .file: return "File"
+        }
+    }
 
     /// Emoji rather than an SF Symbol: at chip size it carries further, and the two modes read
     /// apart at a glance without leaning on the label.

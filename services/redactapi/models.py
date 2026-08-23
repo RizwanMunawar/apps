@@ -45,7 +45,12 @@ class Admin(Base):
 
 
 class Customer(Base):
-    """Someone keys get issued to. Not a portal login — they never sign in here."""
+    """Someone keys and licenses get issued to.
+
+    Customers sign in at /apps/license to see and activate their own licenses. They never reach
+    /admin — that is a separate `Admin` table with separate credentials, so a customer session
+    can never be escalated into an admin one.
+    """
     __tablename__ = "customers"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -58,8 +63,21 @@ class Customer(Base):
     notes: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
+    # Null until the customer sets a password. An account with no password cannot sign in at
+    # all, rather than falling back to some default.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # One-time invite so an admin-created account can set its own password without the admin
+    # ever knowing it. Cleared the moment it is used.
+    invite_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True, index=True)
+    invite_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     keys: Mapped[list["ApiKey"]] = relationship(
         back_populates="customer", order_by="ApiKey.created_at.desc()"
+    )
+    licenses: Mapped[list["License"]] = relationship(
+        back_populates="customer", order_by="License.created_at.desc()"
     )
 
     @property
@@ -69,6 +87,15 @@ class Customer(Base):
     @property
     def active_key_count(self) -> int:
         return sum(1 for key in self.keys if key.is_usable)
+
+    @property
+    def can_sign_in(self) -> bool:
+        return bool(self.password_hash) and self.status is CustomerStatus.active
+
+    @property
+    def invite_is_live(self) -> bool:
+        expires = as_utc(self.invite_expires_at)
+        return bool(self.invite_token) and expires is not None and expires > utcnow()
 
 
 class ApiKey(Base):
@@ -176,3 +203,133 @@ class UsageRecord(Base):
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     bytes_in: Mapped[int] = mapped_column(Integer, default=0)
     detections: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class LicenseKind(str, enum.Enum):
+    full = "full"
+    trial = "trial"
+
+
+class LicenseStatus(str, enum.Enum):
+    # Recorded in the panel but not yet signed — carries no token and unlocks nothing.
+    draft = "draft"
+    active = "active"
+    revoked = "revoked"
+
+
+class License(Base):
+    """One app license: a 14-day trial, or a full license signed offline.
+
+    Unlike `ApiKey`, the token is stored in full. It has to be — the customer needs to re-read it
+    from the portal, and unlike an API key it is not a bearer secret for this server: it is a
+    signed assertion the Mac app checks on its own. Storing it grants no power to mint another,
+    because minting needs the private key this process does not have.
+    """
+    __tablename__ = "licenses"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # Public identifier, e.g. `lic_A7F3K92M`. Appears in the payload and in support requests.
+    license_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), index=True
+    )
+    customer: Mapped[Customer] = relationship(back_populates="licenses")
+
+    kind: Mapped[LicenseKind] = mapped_column(Enum(LicenseKind), default=LicenseKind.full)
+    status: Mapped[LicenseStatus] = mapped_column(Enum(LicenseStatus), default=LicenseStatus.draft)
+
+    seats: Mapped[int] = mapped_column(Integer, default=1)
+    # Comma-separated feature flags the app reads, e.g. "redact,recorder".
+    features: Mapped[str] = mapped_column(String(400), default="redact")
+
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Null while the license is still a draft awaiting offline signing.
+    token: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String(320), default="")
+
+    activations: Mapped[list["Activation"]] = relationship(
+        back_populates="license", cascade="all, delete-orphan",
+        order_by="Activation.activated_at.desc()",
+    )
+
+    @property
+    def feature_list(self) -> list[str]:
+        return [f.strip() for f in self.features.split(",") if f.strip()]
+
+    @property
+    def is_expired(self) -> bool:
+        expires = as_utc(self.expires_at)
+        return expires is not None and expires <= utcnow()
+
+    @property
+    def is_revoked(self) -> bool:
+        return self.revoked_at is not None
+
+    @property
+    def is_usable(self) -> bool:
+        return (
+            self.status is LicenseStatus.active
+            and self.token is not None
+            and not self.is_revoked
+            and not self.is_expired
+        )
+
+    @property
+    def display_status(self) -> str:
+        if self.is_revoked:
+            return "revoked"
+        if self.status is LicenseStatus.draft:
+            return "awaiting signature"
+        if self.is_expired:
+            return "expired"
+        return "active"
+
+    @property
+    def seats_used(self) -> int:
+        return sum(1 for a in self.activations if a.deactivated_at is None)
+
+    @property
+    def seats_free(self) -> int:
+        return max(0, self.seats - self.seats_used)
+
+    @property
+    def expires_label(self) -> str:
+        expires = as_utc(self.expires_at)
+        if expires is None:
+            return "Perpetual"
+        delta = expires - utcnow()
+        if delta.total_seconds() <= 0:
+            return "Expired"
+        days = delta.days
+        if days >= 1:
+            return f"in {days} day{'s' if days != 1 else ''}"
+        hours = int(delta.total_seconds() // 3600)
+        return f"in {hours} hour{'s' if hours != 1 else ''}" if hours >= 1 else "in under an hour"
+
+
+class Activation(Base):
+    """One machine using one license. Seat counting is per active row."""
+    __tablename__ = "activations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    license_db_id: Mapped[int] = mapped_column(
+        ForeignKey("licenses.id", ondelete="CASCADE"), index=True
+    )
+    license: Mapped[License] = relationship(back_populates="activations")
+
+    # Stable per-machine identifier the app derives from the hardware UUID. Not personal data:
+    # it identifies a Mac, not a person, and is stored hashed.
+    machine_id: Mapped[str] = mapped_column(String(64), index=True)
+    machine_name: Mapped[str] = mapped_column(String(200), default="")
+    app_version: Mapped[str] = mapped_column(String(40), default="")
+
+    activated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    deactivated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

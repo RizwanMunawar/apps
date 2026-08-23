@@ -40,7 +40,7 @@ let package = Package(
         // (and therefore build-dmg.sh) outright.
         .executableTarget(
             name: "redact-selfcheck",
-            dependencies: ["Redact"],
+            dependencies: ["AppCore", "Redact"],
             path: "Tools/RedactSelfCheck"
         )
     ]

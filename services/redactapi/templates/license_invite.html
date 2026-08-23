@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Set your password · Redact licensing{% endblock %}
+{% block head_extra %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="brand" style="justify-content:center">
+      <span class="dot"></span>
+      <span>Redact licensing<small>{{ brand }}</small></span>
+    </div>
+    {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
+    <div class="card">
+      <h1 style="font-size:19px;margin-bottom:6px">Set your password</h1>
+      <p class="subtitle" style="margin-bottom:16px">
+        For <strong>{{ customer.email }}</strong>. This link works once, then stops.
+      </p>
+      <form method="post" action="/apps/license/invite/{{ token }}">
+        <div class="field">
+          <label for="password">Password <span class="hint">— at least 10 characters</span></label>
+          <input type="password" name="password" id="password" required minlength="10" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="confirm">Confirm password</label>
+          <input type="password" name="confirm" id="confirm" required minlength="10" autocomplete="new-password">
+        </div>
+        <button class="btn" type="submit" style="width:100%">Create my account</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

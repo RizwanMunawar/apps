@@ -10,11 +10,13 @@ struct ShellTitleBar: View {
     let selected: AppID?
     let palette: Palette
     @ObservedObject var themeManager: ThemeManager
+    @ObservedObject var recorder: SessionRecorder
     @Binding var inspectorCollapsed: Bool
     let goHome: () -> Void
     /// Just clears the traffic lights. The version badge sits immediately after them, hard into
     /// the corner, because there is nothing else that belongs there.
     private let trafficLightInset: CGFloat = 72
+    @State private var pulse = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -43,6 +45,7 @@ struct ShellTitleBar: View {
             Spacer(minLength: 8)
 
             HStack(spacing: 2) {
+                recordControl
                 ThemeToggle(themeManager: themeManager)
                 ToolbarIconButton(
                     systemName: inspectorCollapsed ? "sidebar.right" : "sidebar.squares.right",
@@ -58,5 +61,46 @@ struct ShellTitleBar: View {
         .frame(height: 56)
         .frame(maxWidth: .infinity)
         .background(palette.surface)
+    }
+
+    /// Records the app's own window while you work — a live camera session, or a long file job.
+    ///
+    /// It lives in the title bar rather than beside "Choose file" on purpose: it is not another
+    /// way to feed media *in*, it captures what the app is doing. Putting it next to the file
+    /// picker invited exactly that confusion.
+    @ViewBuilder private var recordControl: some View {
+        if recorder.isRecording {
+            Button(action: { recorder.stop() }) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(palette.warning)
+                        .frame(width: 8, height: 8)
+                        // A recording indicator that does not move is easy to stop noticing,
+                        // and this one is the difference between recording and not.
+                        .opacity(pulse ? 0.35 : 1)
+                        .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse)
+                    Text(recorder.elapsedLabel)
+                        .font(AppFont.mono(12, weight: .medium))
+                        .foregroundStyle(palette.textPrimary)
+                        .monospacedDigit()
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(palette.surfaceRaised, in: Capsule())
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .help("Stop recording")
+            .onAppear { pulse = true }
+        } else {
+            ToolbarIconButton(
+                systemName: recorder.isStarting ? "hourglass" : "record.circle",
+                palette: palette,
+                help: "Record this window"
+            ) {
+                recorder.start()
+            }
+            .disabled(recorder.isStarting)
+        }
     }
 }

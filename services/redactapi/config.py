@@ -36,6 +36,30 @@ MAX_UPLOAD_BYTES = int(os.environ.get("REDACT_MAX_UPLOAD_MB", "100")) * 1024 * 1
 KEY_PREFIX_LIVE = "rdk_live"
 KEY_PREFIX_TEST = "rdk_test"
 
+# --- Licensing -----------------------------------------------------------------------------
+# Verify-only. The matching private key lives on Rizwan's machine and is never read here, which
+# is what stops a server compromise from minting licenses. See licensing.py.
+LICENSE_PUBLIC_KEY = os.environ.get("REDACT_LICENSE_PUBLIC_KEY", "")
+
+# The trial keypair is weaker on purpose: its private half *is* on the server, because trials
+# must issue automatically. Anything it signs is capped at TRIAL_DAYS by the verifier, so
+# stealing it buys an attacker only a trial they could have requested legitimately.
+TRIAL_PRIVATE_KEY = os.environ.get("REDACT_TRIAL_PRIVATE_KEY", "")
+TRIAL_PUBLIC_KEY = os.environ.get("REDACT_TRIAL_PUBLIC_KEY", "")
+
+# Off by default: accounts are created by an admin, who sends a one-time invite link. Nobody
+# can create themselves an account by visiting the licensing page. Set to 1 only if you decide
+# you want open self-serve trials.
+OPEN_SIGNUP = os.environ.get("REDACT_OPEN_SIGNUP", "0").strip().lower() in {"1", "true", "yes"}
+
+# Public origin the licensing pages are served under, for canonical URLs and OG tags.
+SITE_ORIGIN = os.environ.get("REDACT_SITE_ORIGIN", "https://rizwanai.com")
+
+
+def licensing_configured() -> bool:
+    """True when the service can verify licenses and issue trials."""
+    return bool(LICENSE_PUBLIC_KEY and TRIAL_PRIVATE_KEY and TRIAL_PUBLIC_KEY)
+
 
 def require_secret_key() -> str:
     if not SECRET_KEY or SECRET_KEY == "change-me-to-a-64-char-hex-string":

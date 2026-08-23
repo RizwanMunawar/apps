@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% set active = 'licenses' %}
+{% block title %}{{ license.license_id }} · Redact API{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="mono" style="font-size:20px">{{ license.license_id }}</h1>
+    <p class="subtitle">
+      <a href="/admin/customers/{{ license.customer.id }}">{{ license.customer.display_name }}</a>
+      · {{ license.customer.email }}
+      · <span class="badge {{ 'active' if license.display_status == 'active' else ('unassigned' if license.display_status == 'awaiting signature' else 'expired') }}">{{ license.display_status }}</span>
+    </p>
+  </div>
+  {% if not license.is_revoked %}
+  <form method="post" action="/admin/licenses/{{ license.id }}/revoke"
+        onsubmit="return confirm('Revoke {{ license.license_id }}? It stops working when that machine next checks in.')">
+    <button class="btn danger" type="submit">Revoke license</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if draft %}
+<div class="card">
+  <h2>Step 1 — sign this draft on your own machine</h2>
+  <p class="subtitle" style="margin-bottom:14px">
+    This panel cannot sign. The private key lives only on your Mac, which is why a break-in here
+    can create drafts but never a working license.
+  </p>
+
+  <table style="margin-bottom:16px">
+    <tbody>
+      <tr><td><strong>Account</strong></td><td>{{ payload.account_email }}</td></tr>
+      <tr><td><strong>Seats</strong></td><td>{{ payload.seats }}</td></tr>
+      <tr><td><strong>Features</strong></td><td class="mono">{{ payload.features | join(', ') }}</td></tr>
+      <tr><td><strong>Expires</strong></td><td>
+        {% if payload.expires_datetime %}{{ payload.expires_datetime.strftime('%Y-%m-%d %H:%M UTC') }}{% else %}Perpetual{% endif %}
+      </td></tr>
+    </tbody>
+  </table>
+
+  <label>Run this locally</label>
+  <div class="secret-box" style="display:block;white-space:pre-wrap">python3 -m redactapi.licensetool sign --draft {{ draft }}</div>
+  <p style="margin-top:10px">
+    <button class="btn small" type="button"
+            onclick="navigator.clipboard.writeText('python3 -m redactapi.licensetool sign --draft {{ draft }}').then(() => this.textContent = 'Copied')">
+      Copy command
+    </button>
+  </p>
+</div>
+
+<div class="card">
+  <h2>Step 2 — paste the signed token back</h2>
+  <form method="post" action="/admin/licenses/{{ license.id }}/sign">
+    <div class="field">
+      <label for="token">Signed license token</label>
+      <textarea name="token" id="token" rows="4" required placeholder="RZAI1.…"></textarea>
+    </div>
+    <button class="btn" type="submit">Verify and activate</button>
+  </form>
+  <p class="subtitle" style="margin-top:12px">
+    Checked against the public key before it is stored: the signature must be genuine, and the
+    payload must match this account, license id and seat count.
+  </p>
+</div>
+{% else %}
+<div class="card">
+  <h2>License token</h2>
+  {% if license.token %}
+  <div class="secret-box">
+    <span id="token" style="font-size:12px">{{ license.token }}</span>
+    <button class="btn small" type="button"
+            onclick="navigator.clipboard.writeText(document.getElementById('token').textContent.trim()).then(() => this.textContent = 'Copied')">
+      Copy
+    </button>
+  </div>
+  <p class="subtitle" style="margin-top:12px">
+    The customer can also read this from their own account page at /apps/license.
+  </p>
+  {% else %}
+  <p class="empty">No token on this license.</p>
+  {% endif %}
+
+  <table style="margin-top:20px">
+    <tbody>
+      <tr><td><strong>Type</strong></td><td>{{ license.kind.value }}</td></tr>
+      <tr><td><strong>Seats</strong></td><td>{{ license.seats_used }} of {{ license.seats }} in use</td></tr>
+      <tr><td><strong>Features</strong></td><td class="mono">{{ license.feature_list | join(', ') }}</td></tr>
+      <tr><td><strong>Expires</strong></td><td>
+        {% if license.expires_at %}{{ license.expires_at.strftime('%Y-%m-%d %H:%M UTC') }} ({{ license.expires_label }}){% else %}Perpetual{% endif %}
+      </td></tr>
+      <tr><td><strong>Signed</strong></td><td>{{ license.signed_at.strftime('%Y-%m-%d %H:%M UTC') if license.signed_at else '—' }}</td></tr>
+      <tr><td><strong>Issued by</strong></td><td>{{ license.created_by or '—' }}</td></tr>
+      {% if license.notes %}<tr><td><strong>Notes</strong></td><td>{{ license.notes }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Activated machines</h2>
+  {% if license.activations %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Machine</th><th>App</th><th>Activated</th><th>Last seen</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for seat in license.activations %}
+        <tr>
+          <td>{{ seat.machine_name or 'Unnamed Mac' }}<div class="mono" style="color:var(--text-secondary);font-size:11px">{{ seat.machine_id[:16] }}…</div></td>
+          <td>{{ seat.app_version or '—' }}</td>
+          <td>{{ seat.activated_at.strftime('%Y-%m-%d') }}</td>
+          <td>{{ seat.last_seen_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>{% if seat.deactivated_at %}<span class="badge expired">released</span>{% else %}<span class="badge active">active</span>{% endif %}</td>
+          <td>
+            {% if not seat.deactivated_at %}
+            <form class="inline-form" method="post" action="/admin/licenses/{{ license.id }}/seats/{{ seat.id }}/release">
+              <button class="btn secondary small" type="submit">Release seat</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No machines have activated this license yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
