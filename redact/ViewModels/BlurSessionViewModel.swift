@@ -28,7 +28,9 @@ final class BlurSessionViewModel: ObservableObject {
     /// Rough completion of a model import, for the progress readout next to the status line.
     @Published private(set) var modelProgress: Double = 0
 
-    @Published var selectedClassIndices: Set<Int> = [0] { didSet { settings.selectedClasses = selectedClassIndices } }
+    /// Faces by default: they are what people most often need hidden, and covering a whole person
+    /// to hide one face blurs far more of the frame than it has to.
+    @Published var selectedClassIndices: Set<Int> = [FaceDetector.classIndex] { didSet { settings.selectedClasses = selectedClassIndices } }
     @Published var blurStyle: BlurStyle = .pixelate { didSet { settings.style = blurStyle } }
     @Published var blurMethod: BlurMethod = .box { didSet { settings.method = blurMethod } }
     @Published var blurStrength: Double = 25 { didSet { settings.strength = blurStrength } }
@@ -211,13 +213,15 @@ final class BlurSessionViewModel: ObservableObject {
         modelInfo = processor.info
         classes = processor.classes
         // A custom model's classes have nothing to do with the previous model's indices, so start
-        // from the first class rather than carrying a stale selection across.
+        // from the default rather than carrying a stale selection across: faces, whether from
+        // Vision or the model's own class, or the first class for a model with no faces at all.
         // A detection-only model cannot honour mask mode, so fall back rather than leaving a
         // selection that quietly behaves as box anyway.
         if processor.info.supportsSegmentation == false, blurMethod == .mask { blurMethod = .box }
         let valid = Set(classes.map(\.index))
         let kept = selectedClassIndices.intersection(valid)
-        selectedClassIndices = kept.isEmpty ? Set(classes.first.map { [$0.index] } ?? []) : kept
+        let fallback = classes.first { $0.name.lowercased() == FaceDetector.className } ?? classes.first
+        selectedClassIndices = kept.isEmpty ? Set(fallback.map { [$0.index] } ?? []) : kept
     }
 
     /// Called as Redact's screen appears and disappears. Leaving the session running is the

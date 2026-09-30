@@ -256,7 +256,7 @@ public final class MediaProcessor {
                         let result = frameProcessor.process(
                             pixelBuffer: pixelBuffer, selectedClasses: settings.selectedClasses,
                             style: settings.style, method: settings.method, strength: settings.strength,
-                            tracker: tracker
+                            tracker: tracker, upright: orientCIImage
                         )
                         guard let blurred = result.image else { continue }
 

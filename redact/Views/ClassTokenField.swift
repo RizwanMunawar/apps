@@ -13,7 +13,7 @@ struct ClassTokenField: View {
     @State private var query = ""
 
     /// Offered when nothing is being typed: the classes people actually reach for.
-    private let suggested = ["person", "car", "cell phone", "laptop", "dog", "cat"]
+    private let suggested = ["face", "person", "car", "cell phone", "laptop", "dog", "cat"]
 
     private var selected: [DetectableClass] {
         viewModel.classes
